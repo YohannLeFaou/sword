@@ -325,7 +325,7 @@ make_res_weighted_regression = function(time_var,
   }
 
   if (type_regression == "gam"){
-    gam_fit = mgcv::gam(formula = as.formula(paste0("phi ~ ", paste0(x_vars, collapse = "+"))),
+    gam_fit = mgcv::gam(formula = stats::as.formula(paste0("phi ~ ", paste0(x_vars, collapse = "+"))),
                         data = data_train[v_weights_model_train > 0, c("phi",x_vars)],
                         weights = v_weights_model_train[v_weights_model_train > 0],
                         ...)
@@ -471,17 +471,17 @@ make_res_weighted_regression = function(time_var,
 }
 
 
-predict_nodes = function (object, newdata, na.action = na.pass) {
+predict_nodes = function (object, newdata, na.action = stats::na.pass) {
   where <-
     if (missing(newdata))
       object$where
   else {
     if (is.null(attr(newdata, "terms"))) {
-      Terms <- delete.response(object$terms)
-      newdata <- model.frame(Terms, newdata, na.action = na.action,
+      Terms <- stats::delete.response(object$terms)
+      newdata <- stats::model.frame(Terms, newdata, na.action = na.action,
                              xlev = attr(object, "xlevels"))
       if (!is.null(cl <- attr(Terms, "dataClasses")))
-        .checkMFClasses(cl, newdata, TRUE)
+        stats::.checkMFClasses(cl, newdata, TRUE)
     }
     rpart:::pred.rpart(object, rpart:::rpart.matrix(newdata))
   }
@@ -522,12 +522,12 @@ rpartRF = function(data,
     nelson_allen_estimates = do.call(rbind,
                                      args = lapply(X = unique(pred_nodes),
                                                    FUN = function(node){
-                                                     fit = survival::survfit(formula = as.formula(paste0("survival::Surv(time = ", time_var,", event = ",  event_var, ") ~ 1")),
+                                                     fit = survival::survfit(formula = stats::as.formula(paste0("survival::Surv(time = ", time_var,", event = ",  event_var, ") ~ 1")),
                                                                              data = d_train[pred_nodes == node, ])
                                                      nelson_allen = cumsum(fit$n.event/fit$n.risk)
                                                      return(
                                                        c(node,
-                                                         approx(x = c(0,fit$time),
+                                                         stats::approx(x = c(0,fit$time),
                                                                 y = c(0,nelson_allen),
                                                                 xout = seq(from = 0, to = max(data[,"y_prime"]) * 1.05, length.out = 100),
                                                                 method = "constant",

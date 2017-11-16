@@ -71,7 +71,7 @@ RSF_regression = function(time_var,
                                            type = types_weights_eval[j],
                                            max_ratio_weights = 1000,
                                            x_vars = x_vars,
-                                           censoring_model.object = FALSE)$weights
+                                           censoring_model_object = FALSE)$weights
       if (!is.null(data_test)){
         mat_weights_test[,j] = make_weights(data = data[data$is_train == 0, ],
                                             y_name = "y_prime",
@@ -81,7 +81,7 @@ RSF_regression = function(time_var,
                                             type = types_weights_eval[j],
                                             max_ratio_weights = 1000,
                                             x_vars = x_vars,
-                                            censoring_model.object = FALSE)$weights
+                                            censoring_model_object = FALSE)$weights
       }
     }
   }
@@ -118,7 +118,7 @@ RSF_regression = function(time_var,
 
 
   # Calibration of RSF model
-  formula = as.formula(paste0("survival::Surv(", time_var, ",", event_var," ) ~ ."))
+  formula = stats::as.formula(paste0("survival::Surv(", time_var, ",", event_var," ) ~ ."))
   ntime = seq(from = 0, to = max_time * 1.05, length.out = 100)
 
   rfSRC = randomForestSRC::rfsrc(formula = formula ,
@@ -227,7 +227,7 @@ predict_RSF_regression = function(object, newdata){
 
   return(list(predicted = as.vector(predictions),
               survival = cbind(1,predictions_surv_curves[,which(object[["RSF_object"]][["time.interest"]] < object$max_time)],0),
-              time_points = c(0,object[["RSF_object"]][["time.interest"]][which(object[["RSF_object"]][["time.interest"]] < object$max_time)], max_time)
+              time_points = c(0,object[["RSF_object"]][["time.interest"]][which(object[["RSF_object"]][["time.interest"]] < object$max_time)], object$max_time)
   ))
 }
 

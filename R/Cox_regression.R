@@ -130,7 +130,7 @@ Cox_regression = function(time_var,
                                            type = types_weights_eval[j],
                                            max_ratio_weights = 1000,
                                            x_vars = x_vars,
-                                           censoring_model.object = FALSE)$weights
+                                           censoring_model_object = FALSE)$weights
       if (!is.null(data_test)){
         mat_weights_test[,j] = make_weights(data = data[data$is_train == 0, ],
                                             y_name = "y_prime",
@@ -140,7 +140,7 @@ Cox_regression = function(time_var,
                                             type = types_weights_eval[j],
                                             max_ratio_weights = 1000,
                                             x_vars = x_vars,
-                                            censoring_model.object = FALSE)$weights
+                                            censoring_model_object = FALSE)$weights
       }
     }
   }
@@ -175,13 +175,13 @@ Cox_regression = function(time_var,
   }
 
   # Calibration of the Cox model
-  formula = as.formula(paste0("survival::Surv(", time_var, ",", event_var,") ~ ."))
+  formula = stats::as.formula(paste0("survival::Surv(", time_var, ",", event_var,") ~ ."))
   Cox = survival::coxph(formula = formula,
                         data = data_train[,c(time_var, event_var, x_vars)],
                         ...)
 
   baseline_cox = survival::basehaz(Cox)
-  approx_ref_surv = approx(x = c(0,baseline_cox$time),
+  approx_ref_surv = stats::approx(x = c(0,baseline_cox$time),
                            y = c(1,exp( - baseline_cox$hazard)),
                            xout = seq(from = 0,to = max_time * 0.99,length.out = 100),
                            method = "linear",
@@ -220,7 +220,7 @@ Cox_regression = function(time_var,
 
     # results on test
     test_surv_curv_direct_Cox = do.call(rbind,
-                                        lapply(X = exp(predict(Cox, newdata = data_test[,x_vars])),
+                                        lapply(X = exp(survival::predict.coxph(Cox, newdata = data_test[,x_vars])),
                                                FUN = function(x, v){return(v^x)},
                                                v = c(approx_ref_surv$y[which(approx_ref_surv$x < max_time)], 0))
     )
@@ -294,7 +294,7 @@ predict_Cox_regression = function(object, newdata){
   }
 
   baseline_cox = survival::basehaz(object$cox_object)
-  approx_ref_surv = approx(x = c(0,baseline_cox$time),
+  approx_ref_surv = stats::approx(x = c(0,baseline_cox$time),
                            y = c(1,exp( - baseline_cox$hazard)),
                            xout = seq(from = 0,to = object$max_time * 0.99,length.out = 100),
                            method = "linear",
@@ -303,7 +303,7 @@ predict_Cox_regression = function(object, newdata){
   time_points = c(approx_ref_surv$x[which(approx_ref_surv$x < object$max_time)], object$max_time)
 
   predictions_surv_curves = do.call(rbind,
-                                    lapply(X = exp(predict(object$cox_object, newdata = newdata[,object$x_vars])),
+                                    lapply(X = exp(survival::predict.coxph(object$cox_object, newdata = newdata[,object$x_vars])),
                                            FUN = function(x, v){return(v^x)},
                                            v = c(approx_ref_surv$y[which(approx_ref_surv$x < object$max_time)], 0))
   )
@@ -311,7 +311,7 @@ predict_Cox_regression = function(object, newdata){
   predictions = (predictions_surv_curves[, 1:(ncol(predictions_surv_curves)-1)] -
                    predictions_surv_curves[, 2:ncol(predictions_surv_curves)]) %*%
     sapply(X = 2:length(time_points),
-           FUN = function(i){do.call(phi, c(list(x=time_points[i]), phi.args))})
+           FUN = function(i){do.call(object$phi, c(list(x=time_points[i]), object$phi.args))})
 
   return(list(predicted = as.vector(predictions),
               survival = predictions_surv_curves,

@@ -9,7 +9,7 @@ make_weights_from_survival_curves = function(vect_y, vect_delta, mat_survival_cu
   non_zero_w = 1 / length(vect_delta) /
     apply(X = x,
           MARGIN = 1,
-          FUN = function(a){approx(x = time_points,
+          FUN = function(a){stats::approx(x = time_points,
                                    y = a[-1],
                                    xout = a[1],
                                    rule = 2,
@@ -49,7 +49,7 @@ make_KM_weights = function(vect_y, vect_delta, vect_c = NULL){
   c_time = c(0,km_c$time)
   c_surv = c(1,km_c$surv)
   N = length(vect_y)
-  w = approx(x = c_time, # weights are estimated by interpolation of S_C estimator
+  w = stats::approx(x = c_time, # weights are estimated by interpolation of S_C estimator
              y = c_surv,
              xout = vect_y,
              method = "linear",
@@ -95,17 +95,17 @@ make_weights = function(data,
 
   if (type == "Cox"){
     # possible to make a functions "make_cox_weights", "make_RSF_weights"
-    formula = as.formula(paste0("survival::Surv(",y_name2,", deltaC ) ~ ."))
+    formula = stats::as.formula(paste0("survival::Surv(",y_name2,", deltaC ) ~ ."))
     cox_fit = survival::coxph(formula = formula,
                               data = data[,c(y_name2, "deltaC", x_vars)]
     )
 
-    baseline_cox = basehaz(cox_fit)
+    baseline_cox = survival::basehaz(cox_fit)
     ref_surv = data.frame(time = c(0, baseline_cox$time),
                           surv = c(1, exp(-baseline_cox$hazard)))
 
     weights = 1/ nrow(data) /
-      pmax( (approx(x = ref_surv$time,
+      pmax( (stats::approx(x = ref_surv$time,
                     y = ref_surv$surv,
                     xout = data[,y_name],
                     method = "linear",
@@ -118,7 +118,7 @@ make_weights = function(data,
     max_time = max(data[which(data[,delta_name] == 1), y_name])
     ntime = seq(from = 0, to = max_time * 1.05, length.out = 100)
     nodedepth_RSF = floor(1/2*log(nrow(data))/log(2))
-    formula = as.formula(paste0("survival::Surv(",y_name2,", deltaC ) ~ ."))
+    formula = stats::as.formula(paste0("survival::Surv(",y_name2,", deltaC ) ~ ."))
 
     RSF_fit = randomForestSRC::rfsrc(formula = formula,
                                      data = data[, c(y_name2, "deltaC", x_vars)],

@@ -26,7 +26,7 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
     # compute empirical phi of the group & mean prediction inside the group
     phi_by_group = c()
     mean_pred_by_group = c()
-    formula = as.formula(paste0("survival::Surv(time = ", y_name,", event = ", delta_name, ") ~ 1"))
+    formula = stats::as.formula(paste0("survival::Surv(time = ", y_name,", event = ", delta_name, ") ~ 1"))
     for (i in 1:n_groups){
       if (sum(data[data$group == i,delta_name]) > 0){ # if it exists non censored observations in the group
 
@@ -53,8 +53,8 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
     # compare empirical phi of the group with mean prediction inside the group
     return(c(NormalizedGini(solutions = 1:length(phi_by_group), # Gini
                             predictions = phi_by_group),
-             (1 + cor.test(1:length(phi_by_group), phi_by_group, method = "kendall")$estimate)/2, # Kendall
-             (1 - 1/length(phi_by_group) * sum((phi_by_group - mean_pred_by_group)^2) / sd(phi_by_group)^2) # R2
+             (1 + stats::cor.test(1:length(phi_by_group), phi_by_group, method = "kendall")$estimate)/2, # Kendall
+             (1 - 1/length(phi_by_group) * sum((phi_by_group - mean_pred_by_group)^2) / stats::sd(phi_by_group)^2) # R2
     ))
   }
   if (method == "single"){
@@ -94,7 +94,7 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
 
     return(c(NormalizedGini(solutions = 1:sum(weights),
                             predictions = rep(x = phi_by_group, times = weights)),
-             (1 + cor.test(1:sum(weights),
+             (1 + stats::cor.test(1:sum(weights),
                            rep(x = phi_by_group, times = weights),
                            method = "kendall")$estimate)/2,
              (1 - sum( weights * (phi_by_group - mean_pred_by_group)^2) /
@@ -159,7 +159,7 @@ eval_model = function(predictions,
   list_criteria = list()
 
   if("concordance" %in% eval_methods){
-    formula = as.formula(paste0("survival::Surv(", phi_name, ",", delta_name, ") ~ predictions"))
+    formula = stats::as.formula(paste0("survival::Surv(", phi_name, ",", delta_name, ") ~ predictions"))
     concordance =
       1 - survival::survConcordance(formula = formula,
                                     data = cbind(data[,c(phi_name, delta_name)],
@@ -219,7 +219,7 @@ eval_model = function(predictions,
     R2 = 1 - sum( (data[,phi_non_censored_name] - predictions)^2 ) /
       sum( (data[,phi_non_censored_name] - mean(data[,phi_non_censored_name]))^2 )
 
-    Kendall = (1 + cor.test(predictions,
+    Kendall = (1 + stats::cor.test(predictions,
                             data[,phi_non_censored_name],
                             method = "kendall")$estimate)/2
 
