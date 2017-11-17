@@ -26,7 +26,7 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
     # compute empirical phi of the group & mean prediction inside the group
     phi_by_group = c()
     mean_pred_by_group = c()
-    formula = stats::as.formula(paste0("survival::Surv(time = ", y_name,", event = ", delta_name, ") ~ 1"))
+    formula = stats::as.formula(paste0("Surv(time = ", y_name,", event = ", delta_name, ") ~ 1"))
     for (i in 1:n_groups){
       if (sum(data[data$group == i,delta_name]) > 0){ # if it exists non censored observations in the group
 
@@ -159,7 +159,7 @@ eval_model = function(predictions,
   list_criteria = list()
 
   if("concordance" %in% eval_methods){
-    formula = stats::as.formula(paste0("survival::Surv(", phi_name, ",", delta_name, ") ~ predictions"))
+    formula = stats::as.formula(paste0("Surv(", phi_name, ",", delta_name, ") ~ predictions"))
     concordance =
       1 - survival::survConcordance(formula = formula,
                                     data = cbind(data[,c(phi_name, delta_name)],

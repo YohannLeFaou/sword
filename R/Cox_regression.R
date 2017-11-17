@@ -4,7 +4,6 @@
 #' ma description
 #'
 #'
-#'
 #' @param time_var A character string which gives the name of the right-censored variable
 #' @param event_var A character string which gives the name of the event variable (this variable should be binary : 1 = non censored, 0 = censored)
 #' @param x_vars A vector of character strings which gives the names of the explanatory variables
@@ -53,8 +52,9 @@
 #' @examples
 #'
 #' data(veteran, package = "randomForestSRC")
-#' res1 = Cox_regression(time_var = "touboul", event_var = "status", x_vars = setdiff(colnames(veteran),c("time","status")),
-#' data_train = veteran)
+#' res1 = Cox_regression(time_var = "time", event_var = "status",
+#'                       x_vars = setdiff(colnames(veteran),c("time","status")),
+#'                       data_train = veteran)
 #' print(res1$list_criteria_train)
 
 
@@ -220,7 +220,7 @@ Cox_regression = function(time_var,
 
     # results on test
     test_surv_curv_direct_Cox = do.call(rbind,
-                                        lapply(X = exp(survival::predict.coxph(Cox, newdata = data_test[,x_vars])),
+                                        lapply(X = exp(stats::predict(Cox, newdata = data_test[,x_vars])),
                                                FUN = function(x, v){return(v^x)},
                                                v = c(approx_ref_surv$y[which(approx_ref_surv$x < max_time)], 0))
     )
@@ -303,7 +303,7 @@ predict_Cox_regression = function(object, newdata){
   time_points = c(approx_ref_surv$x[which(approx_ref_surv$x < object$max_time)], object$max_time)
 
   predictions_surv_curves = do.call(rbind,
-                                    lapply(X = exp(survival::predict.coxph(object$cox_object, newdata = newdata[,object$x_vars])),
+                                    lapply(X = exp(stats::predict(object$cox_object, newdata = newdata[,object$x_vars])),
                                            FUN = function(x, v){return(v^x)},
                                            v = c(approx_ref_surv$y[which(approx_ref_surv$x < object$max_time)], 0))
   )

@@ -95,7 +95,7 @@ make_weights = function(data,
 
   if (type == "Cox"){
     # possible to make a functions "make_cox_weights", "make_RSF_weights"
-    formula = stats::as.formula(paste0("survival::Surv(",y_name2,", deltaC ) ~ ."))
+    formula = stats::as.formula(paste0("Surv(",y_name2,", deltaC ) ~ ."))
     cox_fit = survival::coxph(formula = formula,
                               data = data[,c(y_name2, "deltaC", x_vars)]
     )
@@ -118,7 +118,7 @@ make_weights = function(data,
     max_time = max(data[which(data[,delta_name] == 1), y_name])
     ntime = seq(from = 0, to = max_time * 1.05, length.out = 100)
     nodedepth_RSF = floor(1/2*log(nrow(data))/log(2))
-    formula = stats::as.formula(paste0("survival::Surv(",y_name2,", deltaC ) ~ ."))
+    formula = stats::as.formula(paste0("Surv(",y_name2,", deltaC ) ~ ."))
 
     RSF_fit = randomForestSRC::rfsrc(formula = formula,
                                      data = data[, c(y_name2, "deltaC", x_vars)],

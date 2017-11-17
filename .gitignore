@@ -3,5 +3,7 @@
 .RData
 .Ruserdata
 to_do_list
+.to_do_list.swps
 sword.Rproj
 .DS_Store
+test_example/

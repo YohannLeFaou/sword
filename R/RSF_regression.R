@@ -118,7 +118,7 @@ RSF_regression = function(time_var,
 
 
   # Calibration of RSF model
-  formula = stats::as.formula(paste0("survival::Surv(", time_var, ",", event_var," ) ~ ."))
+  formula = stats::as.formula(paste0("Surv(", time_var, ",", event_var," ) ~ ."))
   ntime = seq(from = 0, to = max_time * 1.05, length.out = 100)
 
   rfSRC = randomForestSRC::rfsrc(formula = formula ,
@@ -179,7 +179,7 @@ RSF_regression = function(time_var,
   }
 
   result = list(
-    predicted_train = overfitted_predictions_direct_RSF,
+    predicted_train = as.vector(overfitted_predictions_direct_RSF),
     list_criteria_train = list_criteria_train,
     data_train = data_train[,c(time_var, event_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
     mat_weights_train = mat_weights_train,
@@ -190,7 +190,7 @@ RSF_regression = function(time_var,
     censoring_rate_with_threshold = sum(data$delta_prime == 0) / nrow(data)
   )
   if (!is.null(data_test)){
-    result$predicted_test = test_predictions_direct_RSF
+    result$predicted_test = as.vector(test_predictions_direct_RSF)
     result$list_criteria_test = list_criteria_test
     result$data_test = data_test[,c(time_var, event_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
     result$mat_weights_test = mat_weights_test

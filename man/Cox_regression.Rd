@@ -77,7 +77,8 @@ balbla
 \examples{
 
 data(veteran, package = "randomForestSRC")
-res1 = Cox_regression(time_var = "touboul", event_var = "status", x_vars = setdiff(colnames(veteran),c("time","status")),
-data_train = veteran)
+res1 = Cox_regression(time_var = "time", event_var = "status",
+                      x_vars = setdiff(colnames(veteran),c("time","status")),
+                      data_train = veteran)
 print(res1$list_criteria_train)
 }

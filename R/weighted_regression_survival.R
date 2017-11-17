@@ -522,7 +522,7 @@ rpartRF = function(data,
     nelson_allen_estimates = do.call(rbind,
                                      args = lapply(X = unique(pred_nodes),
                                                    FUN = function(node){
-                                                     fit = survival::survfit(formula = stats::as.formula(paste0("survival::Surv(time = ", time_var,", event = ",  event_var, ") ~ 1")),
+                                                     fit = survival::survfit(formula = stats::as.formula(paste0("Surv(time = ", time_var,", event = ",  event_var, ") ~ 1")),
                                                                              data = d_train[pred_nodes == node, ])
                                                      nelson_allen = cumsum(fit$n.event/fit$n.risk)
                                                      return(

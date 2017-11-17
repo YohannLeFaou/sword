@@ -18,11 +18,10 @@ License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 Imports: 
-    survival (>= 2.41-3),
     randomForestSRC (>= 2.4.2),
     mgcv (>= 1.8-17),
     rpart (>= 4.1-11),
     stats (>= 3.4)
 Depends:
-    R (>= 3.4), methods
+    R (>= 3.4), methods, survival (>= 2.41-3), graphics (>= 3.4)
 RoxygenNote: 6.0.1
