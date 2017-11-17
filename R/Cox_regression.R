@@ -25,7 +25,7 @@
 #' @param types_weights_eval A vector of character strings which gives the types of weights to be used for IPCW
 #' in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
 #' Possible choices are "KM", "Cox", "RSF" and "0_1". See \emph{Details - Evaluation criteria} for more information
-#' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio for the IPC weights (default = 20).
+#' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio for the IPC weights (default = 1000).
 #' See \emph{Details - Evaluation criteria} for more information
 #' @param mat_weights A matrix to provide handmade IPC weights for the model evaluation (default = \code{NULL}).
 #' \code{mat_weights} should satisfied \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)} and should give the
@@ -71,7 +71,7 @@ Cox_regression = function(time_var,
                           eval_methods = c("concordance","weighted"),
                           v_bandwidth = c(20),
                           types_weights_eval = c("KM"),
-                          max_ratio_weights_eval = 20,
+                          max_ratio_weights_eval = 1000,
                           mat_weights = NULL,
                           time_non_censored_var = NULL,
                           ...){
@@ -175,7 +175,7 @@ Cox_regression = function(time_var,
   }
 
   # Calibration of the Cox model
-  formula = stats::as.formula(paste0("survival::Surv(", time_var, ",", event_var,") ~ ."))
+  formula = stats::as.formula(paste0("Surv(", time_var, ",", event_var,") ~ ."))
   Cox = survival::coxph(formula = formula,
                         data = data_train[,c(time_var, event_var, x_vars)],
                         ...)
@@ -248,7 +248,7 @@ Cox_regression = function(time_var,
   }
 
   result = list(
-    predicted_train = overfitted_predictions_direct_Cox,
+    predicted_train = as.vector(overfitted_predictions_direct_Cox),
     list_criteria_train = list_criteria_train,
     data_train = data_train[,c(time_var, event_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
     mat_weights_train = mat_weights_train,
@@ -259,7 +259,7 @@ Cox_regression = function(time_var,
     censoring_rate_with_threshold = sum(data$delta_prime == 0) / nrow(data)
   )
   if (!is.null(data_test)){
-    result$predicted_test = test_predictions_direct_Cox
+    result$predicted_test = as.vector(test_predictions_direct_Cox)
     result$list_criteria_test = list_criteria_test
     result$data_test = data_test[,c(time_var, event_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
     result$mat_weights_test = mat_weights_test

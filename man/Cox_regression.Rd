@@ -8,7 +8,7 @@ Cox_regression(time_var, event_var, x_vars, data_train, data_test = NULL,
   phi = function(x) {     x }, phi.args = list(), max_time = NULL,
   cox_object = TRUE, eval_methods = c("concordance", "weighted"),
   v_bandwidth = c(20), types_weights_eval = c("KM"),
-  max_ratio_weights_eval = 20, mat_weights = NULL,
+  max_ratio_weights_eval = 1000, mat_weights = NULL,
   time_non_censored_var = NULL, ...)
 }
 \arguments{
@@ -45,7 +45,7 @@ See \emph{Details - Evaluation criteria} for more information}
 in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
 Possible choices are "KM", "Cox", "RSF" and "0_1". See \emph{Details - Evaluation criteria} for more information}
 
-\item{max_ratio_weights_eval}{A real number which gives the maximum admissible ratio for the IPC weights (default = 20).
+\item{max_ratio_weights_eval}{A real number which gives the maximum admissible ratio for the IPC weights (default = 1000).
 See \emph{Details - Evaluation criteria} for more information}
 
 \item{mat_weights}{A matrix to provide handmade IPC weights for the model evaluation (default = \code{NULL}).
