@@ -1,7 +1,7 @@
 
 
-weighted_regression_survival = function(time_var,
-                                        event_var,
+weighted_regression_survival = function(y_var,
+                                        delta_var,
                                         x_vars,
                                         data_train,
                                         data_test = NULL,
@@ -18,7 +18,7 @@ weighted_regression_survival = function(time_var,
                                         max_ratio_weights_model = NULL,
                                         max_ratio_weights_eval = 20,
                                         mat_weights = NULL, # we say that when mat_weights is not NULL, and type_weights is NULL, the column 1 of mat_weights is employed for fitting
-                                        time_non_censored_var = NULL,
+                                        y_non_censored_var = NULL,
                                         mode_w_RF = 1,
                                         ...){
 
@@ -37,30 +37,30 @@ weighted_regression_survival = function(time_var,
   # column names of mat_weights should be explicit
   if (!is.null(mat_weights) & is.null(colnames(mat_weights))) colnames(mat_weights) = paste0("w",1:ncol(mat_weights))
 
-  if (is.null(time_non_censored_var)) {
+  if (is.null(y_non_censored_var)) {
     phi_non_censored_name = NULL
   } else {
     phi_non_censored_name = "phi_non_censored"
   }
 
   if (!is.null(data_test)){
-    data = rbind(data_train[,c(time_var, event_var, x_vars, time_non_censored_var)],
-                 data_test[,c(time_var, event_var, x_vars, time_non_censored_var)])
+    data = rbind(data_train[,c(y_var, delta_var, x_vars, y_non_censored_var)],
+                 data_test[,c(y_var, delta_var, x_vars, y_non_censored_var)])
     data$is_train = c(rep(1, nrow(data_train)), rep(0, nrow(data_test)))
   } else {
-    data = data_train[,c(time_var, event_var, x_vars, time_non_censored_var)]
+    data = data_train[,c(y_var, delta_var, x_vars, y_non_censored_var)]
     data$is_train = 1
   }
 
-  if (is.null(max_time)){max_time = max(data_train[which(data_train[, event_var] == 1), time_var])}
+  if (is.null(max_time)){max_time = max(data_train[which(data_train[, delta_var] == 1), y_var])}
 
-  data$y_prime = pmin(data[,time_var], max_time)
-  data$delta_prime = 1 * ((data[,event_var] != 0) | (data[,time_var] >= max_time))
+  data$y_prime = pmin(data[,y_var], max_time)
+  data$delta_prime = 1 * ((data[,delta_var] != 0) | (data[,y_var] >= max_time))
   data$phi = sapply(X = 1:length(data$y_prime),
                     FUN = function(i){do.call(phi, c(list(x=data$y_prime[i]), phi.args))})
-  if(!is.null(time_non_censored_var)){
+  if(!is.null(y_non_censored_var)){
     data$phi_non_censored = sapply(X = 1:nrow(data),
-                                   FUN = function(i){do.call(phi, c(list(x=pmin(data[,time_non_censored_var], max_time)[i]), phi.args))})
+                                   FUN = function(i){do.call(phi, c(list(x=pmin(data[,y_non_censored_var], max_time)[i]), phi.args))})
   }
 
   if (weights_manual){
@@ -92,8 +92,8 @@ weighted_regression_survival = function(time_var,
         res_weights_train = make_weights(data = data[data$is_train == 1, ],
                                          y_name = "y_prime",
                                          delta_name = "delta_prime",
-                                         y_name2 = time_var,
-                                         delta_name2 = event_var,
+                                         y_name2 = y_var,
+                                         delta_name2 = delta_var,
                                          type = types_weights_eval[j],
                                          max_ratio_weights = 1000,
                                          x_vars = x_vars,
@@ -106,8 +106,8 @@ weighted_regression_survival = function(time_var,
           res_weights_test = make_weights(data = data[data$is_train == 0, ],
                                           y_name = "y_prime",
                                           delta_name = "delta_prime",
-                                          y_name2 = time_var,
-                                          delta_name2 = event_var,
+                                          y_name2 = y_var,
+                                          delta_name2 = delta_var,
                                           type = types_weights_eval[j],
                                           max_ratio_weights = 1000,
                                           x_vars = x_vars,
@@ -119,8 +119,8 @@ weighted_regression_survival = function(time_var,
         res_weights_train = make_weights(data = data[data$is_train == 1, ],
                                          y_name = "y_prime",
                                          delta_name = "delta_prime",
-                                         y_name2 = time_var,
-                                         delta_name2 = event_var,
+                                         y_name2 = y_var,
+                                         delta_name2 = delta_var,
                                          type = types_weights_eval[j],
                                          max_ratio_weights = 1000,
                                          x_vars = x_vars,
@@ -131,8 +131,8 @@ weighted_regression_survival = function(time_var,
           res_weights_test = make_weights(data = data[data$is_train == 0, ],
                                           y_name = "y_prime",
                                           delta_name = "delta_prime",
-                                          y_name2 = time_var,
-                                          delta_name2 = event_var,
+                                          y_name2 = y_var,
+                                          delta_name2 = delta_var,
                                           type = types_weights_eval[j],
                                           max_ratio_weights = 1000,
                                           x_vars = x_vars,
@@ -189,8 +189,8 @@ weighted_regression_survival = function(time_var,
   }
 
 
-  weighted_regression_result = make_res_weighted_regression(time_var = time_var,
-                                                            event_var = event_var,
+  weighted_regression_result = make_res_weighted_regression(y_var = y_var,
+                                                            delta_var = delta_var,
                                                             x_vars = x_vars,
                                                             data_train = data_train,
                                                             data_test = data_test,
@@ -258,8 +258,8 @@ predict_weighted_regression_survival = function(object, newdata){
 }
 
 
-make_res_weighted_regression = function(time_var,
-                                        event_var,
+make_res_weighted_regression = function(y_var,
+                                        delta_var,
                                         x_vars,
                                         data_train,
                                         data_test,
@@ -295,8 +295,8 @@ make_res_weighted_regression = function(time_var,
     }
     if (mode_w_RF == 2){
       rpartRF_fit = rpartRF(data = data_train,
-                            time_var = time_var,
-                            event_var = event_var,
+                            y_var = y_var,
+                            delta_var = delta_var,
                             x_vars = x_vars,
                             type_weights = type_weights,
                             max_ratio_weights_model = max_ratio_weights_model,
@@ -429,7 +429,7 @@ make_res_weighted_regression = function(time_var,
   result = list(
     predicted_train = overfitted_predictions,
     list_criteria_train = list_criteria_train,
-    data_train = data_train[,c(time_var, event_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
+    data_train = data_train[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
     v_weights_model_train = v_weights_model_train,
     mat_weights_train = mat_weights_train,
     x_vars = x_vars,
@@ -459,7 +459,7 @@ make_res_weighted_regression = function(time_var,
   if (!is.null(data_test)){
     result$predicted_test = test_predictions
     result$list_criteria_test = list_criteria_test
-    result$data_test = data_test[,c(time_var, event_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
+    result$data_test = data_test[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
     result$mat_weights_test = mat_weights_test
     if ((type_regression == "RF") & (mode_w_RF == 2)){
       result$list_criteria_test_KMloc = list_criteria_test_KMloc
@@ -490,8 +490,8 @@ predict_nodes = function (object, newdata, na.action = stats::na.pass) {
 
 
 rpartRF = function(data,
-                   time_var,
-                   event_var,
+                   y_var,
+                   delta_var,
                    x_vars,
                    type_weights,
                    max_ratio_weights_model,
@@ -505,8 +505,8 @@ rpartRF = function(data,
 
     weights_in_bag = make_weights(y_name = "y_prime",
                                   delta_name = "delta_prime",
-                                  y_name2 = time_var,
-                                  delta_name2 = event_var,
+                                  y_name2 = y_var,
+                                  delta_name2 = delta_var,
                                   x_vars = x_vars,
                                   censoring_model_object = F,
                                   max_ratio_weights = max_ratio_weights_model,
@@ -522,7 +522,7 @@ rpartRF = function(data,
     nelson_allen_estimates = do.call(rbind,
                                      args = lapply(X = unique(pred_nodes),
                                                    FUN = function(node){
-                                                     fit = survival::survfit(formula = stats::as.formula(paste0("Surv(time = ", time_var,", event = ",  event_var, ") ~ 1")),
+                                                     fit = survival::survfit(formula = stats::as.formula(paste0("Surv(time = ", y_var,", event = ",  delta_var, ") ~ 1")),
                                                                              data = d_train[pred_nodes == node, ])
                                                      nelson_allen = cumsum(fit$n.event/fit$n.risk)
                                                      return(

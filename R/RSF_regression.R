@@ -1,7 +1,56 @@
 
-
-RSF_regression = function(time_var,
-                          event_var,
+#' Une belle documentation pour RSF_regression
+#'
+#' ma description
+#'
+#' @param y_var A character string which gives the name of the right-censored variable
+#' @param delta_var A character string which gives the name of the event variable (this variable should be binary : 1 = non censored, 0 = censored)
+#' @param x_vars A vector of character strings which gives the names of the explanatory variables
+#' @param data_train A data.frame of training observations. It must contain the column names \code{y_var},
+#' \code{delta_var} and \code{x_vars}
+#' @param data_test A data.frame of testing observations (default = \code{NULL})
+#' @param phi A function to be applied to \code{y_var}
+#' @param phi.args A list of additional parameters for the function \code{phi} (default = NULL). See \emph{Examples} for a use case
+#' @param max_time A real number giving a threshold for \code{y_var} (default = \code{NULL}). If \code{NULL}, then max_time is
+#' set to the maximum non censored observation of \code{y_var} among the training set
+#' @param RSF_object A boolean which indicates if the Cox model fitted to the training data should be returned (default = \code{TRUE})
+#' @param eval_methods A vector of character strings which gives the methods that should be used for the evaluation of the
+#' model (default = \code{c("concordance","weighted")}).
+#' Possible choices are "concordance", "weighted", "group" and "single". Multiple choices are possible.
+#' See \emph{Details - Evaluation criteria} for more information
+#' @param v_bandwidth A vector of real numbers for the bandwidths to use for the model evaluation if \code{"group"} is used
+#' as an \code{eval_method} (default = \code{c(20)}). Only used if \code{"group"} is used as \code{eval_method}.
+#' See \emph{Details - Evaluation criteria} for more information
+#' @param types_weights_eval A vector of character strings which gives the types of weights to be used for IPCW
+#' in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
+#' Possible choices are "KM", "Cox", "RSF" and "0_1". See \emph{Details - Evaluation criteria} for more information
+#' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio for the IPC weights (default = 1000).
+#' See \emph{Details - Evaluation criteria} for more information
+#' @param mat_weights A matrix to provide handmade IPC weights for the model evaluation (default = \code{NULL}).
+#' \code{mat_weights} should satisfied \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)} and should give the
+#' in columns (multiple columns are possible). Column names of \code{mat_weights} may be used to specify names
+#' for the provided weights (by default names will be "w1), "w2", ...
+#' @param y_non_censored_var A character string which gives the name of the non censored \code{y_var} (default = NULL).
+#' To be used only in the context os simulated data.
+#' @param ... Additional parameter that may be pass to the \code{\link[survival]{coxph}} function (package \emph{survival})
+#'
+#'
+#' @details
+#' \itemize{ %je peux utiliser enumerate si je souhaite mettre des numero
+#' \item \emph{Evaluation criteria}
+#'
+#' balbla
+#' \item rezre erae}
+#'
+#'
+#'
+#'
+#' @return A list with the following elements :
+#' \item{predicted}{A vector of the predicted values for phi(T)}
+#' \item{survival}{A dataframe (matrix) of the predicted survival curves given by the Cox model}
+#' \item{time_points}{A vector of the time points where the survival curves are evaluated}
+RSF_regression = function(y_var,
+                          delta_var,
                           x_vars,
                           data_train,
                           data_test = NULL,
@@ -14,7 +63,7 @@ RSF_regression = function(time_var,
                           types_weights_eval = c("KM"),
                           max_ratio_weights_eval = 20,
                           mat_weights = NULL,
-                          time_non_censored_var = NULL,
+                          y_non_censored_var = NULL,
                           ...){
 
   # Preprocessing of the arguments & data
@@ -27,30 +76,30 @@ RSF_regression = function(time_var,
   eval_methods <- match.arg(as.character(eval_methods), c("concordance","single", "group", "weighted"), several.ok = T)
   types_weights_eval = match.arg(as.character(types_weights_eval), c("KM", "Cox", "RSF", "0_1"), several.ok = T)
 
-  if (is.null(time_non_censored_var)) {
+  if (is.null(y_non_censored_var)) {
     phi_non_censored_name = NULL
   } else {
     phi_non_censored_name = "phi_non_censored"
   }
 
   if (!is.null(data_test)){
-    data = rbind(data_train[,c(time_var, event_var, x_vars, time_non_censored_var)],
-                 data_test[,c(time_var, event_var, x_vars, time_non_censored_var)])
+    data = rbind(data_train[,c(y_var, delta_var, x_vars, y_non_censored_var)],
+                 data_test[,c(y_var, delta_var, x_vars, y_non_censored_var)])
     data$is_train = c(rep(1, nrow(data_train)), rep(0, nrow(data_test)))
   } else {
-    data = data_train[,c(time_var, event_var, x_vars, time_non_censored_var)]
+    data = data_train[,c(y_var, delta_var, x_vars, y_non_censored_var)]
     data$is_train = 1
   }
 
-  if (is.null(max_time)){max_time = max(data_train[which(data_train[, event_var] == 1), time_var])}
+  if (is.null(max_time)){max_time = max(data_train[which(data_train[, delta_var] == 1), y_var])}
 
-  data$y_prime = pmin(data[,time_var], max_time)
-  data$delta_prime = 1 * ((data[,event_var] != 0) | (data[,time_var] >= max_time))
+  data$y_prime = pmin(data[,y_var], max_time)
+  data$delta_prime = 1 * ((data[,delta_var] != 0) | (data[,y_var] >= max_time))
   data$phi = sapply(X = 1:length(data$y_prime),
                     FUN = function(i){do.call(phi, c(list(x=data$y_prime[i]), phi.args))})
-  if(!is.null(time_non_censored_var)){
+  if(!is.null(y_non_censored_var)){
     data$phi_non_censored = sapply(X = 1:nrow(data),
-                                   FUN = function(i){do.call(phi, c(list(x=pmin(data[,time_non_censored_var], max_time)[i]), phi.args))})
+                                   FUN = function(i){do.call(phi, c(list(x=pmin(data[,y_non_censored_var], max_time)[i]), phi.args))})
   }
 
 
@@ -66,8 +115,8 @@ RSF_regression = function(time_var,
       mat_weights_train[,j] = make_weights(data = data[data$is_train == 1, ],
                                            y_name = "y_prime",
                                            delta_name = "delta_prime",
-                                           y_name2 = time_var,
-                                           delta_name2 = event_var,
+                                           y_name2 = y_var,
+                                           delta_name2 = delta_var,
                                            type = types_weights_eval[j],
                                            max_ratio_weights = 1000,
                                            x_vars = x_vars,
@@ -76,8 +125,8 @@ RSF_regression = function(time_var,
         mat_weights_test[,j] = make_weights(data = data[data$is_train == 0, ],
                                             y_name = "y_prime",
                                             delta_name = "delta_prime",
-                                            y_name2 = time_var,
-                                            delta_name2 = event_var,
+                                            y_name2 = y_var,
+                                            delta_name2 = delta_var,
                                             type = types_weights_eval[j],
                                             max_ratio_weights = 1000,
                                             x_vars = x_vars,
@@ -118,11 +167,11 @@ RSF_regression = function(time_var,
 
 
   # Calibration of RSF model
-  formula = stats::as.formula(paste0("Surv(", time_var, ",", event_var," ) ~ ."))
+  formula = stats::as.formula(paste0("Surv(", y_var, ",", delta_var," ) ~ ."))
   ntime = seq(from = 0, to = max_time * 1.05, length.out = 100)
 
   rfSRC = randomForestSRC::rfsrc(formula = formula ,
-                                 data = data_train[,c(time_var, event_var, x_vars)],
+                                 data = data_train[,c(y_var, delta_var, x_vars)],
                                  forest = T,
                                  ntime = ntime,
                                  ...)
@@ -181,7 +230,7 @@ RSF_regression = function(time_var,
   result = list(
     predicted_train = as.vector(overfitted_predictions_direct_RSF),
     list_criteria_train = list_criteria_train,
-    data_train = data_train[,c(time_var, event_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
+    data_train = data_train[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
     mat_weights_train = mat_weights_train,
     max_time = max_time,
     phi = phi,
@@ -192,7 +241,7 @@ RSF_regression = function(time_var,
   if (!is.null(data_test)){
     result$predicted_test = as.vector(test_predictions_direct_RSF)
     result$list_criteria_test = list_criteria_test
-    result$data_test = data_test[,c(time_var, event_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
+    result$data_test = data_test[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
     result$mat_weights_test = mat_weights_test
   }
   if (RSF_object){
