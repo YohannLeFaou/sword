@@ -163,7 +163,7 @@
 #'
 #' \item{x_vars}{See \emph{Argument}}
 #'
-#'
+#' \item{max_ratio_weights_eval}{See \emph{Argument}}
 #'
 #' @references [Gerb. et al.] to be published
 #'
@@ -178,8 +178,8 @@ weighted_regression_survival = function(y_var,
                                         x_vars,
                                         data_train,
                                         data_test = NULL,
-                                        type_regression = c("RF", "gam"),
-                                        type_weights = c("KM","Cox","RSF"),
+                                        type_regression = "RF",
+                                        type_weights = "KM",
                                         phi = function(x){x},
                                         phi.args = list(),
                                         max_time = NULL,
@@ -187,18 +187,24 @@ weighted_regression_survival = function(y_var,
                                         censoring_model_object = T,
                                         eval_methods = c("concordance","weighted"),
                                         v_bandwidth = 20,
-                                        types_weights_eval = c("KM"),
-                                        max_ratio_weights_model = NULL,
-                                        max_ratio_weights_eval = 20,
+                                        types_weights_eval = "KM",
+                                        max_ratio_weights_model = 20,
+                                        max_ratio_weights_eval = 1000,
                                         mat_weights = NULL, # we say that when mat_weights is not NULL, and type_weights is NULL, the column 1 of mat_weights is employed for fitting
                                         y_non_censored_var = NULL,
                                         mode_w_RF = 1,
+
+                                        # param for RF
+                                        ntree = 100,
+                                        minleaf = 5,
+                                        maxdepth = 6,
+                                        mtry = NULL,
                                         ...){
 
   # Preprocessing of the arguments & data
 
   ## specific preprocessing compared to Cox/RSF regression
-  type_weights = match.arg(as.character(type_weights), c("KM","Cox","RSF"))
+  type_weights = match.arg(as.character(type_weights), c("KM", "Cox", "RSF", "unif"))
   weights_manual = !is.null(mat_weights)
   type_regression = match.arg(as.character(type_regression), c("RF", "gam"))
   # --------------------------------------------------------------------------------
@@ -206,6 +212,8 @@ weighted_regression_survival = function(y_var,
   eval_methods <- match.arg(as.character(eval_methods), c("concordance","single", "group", "weighted"), several.ok = T)
   types_weights_eval = match.arg(as.character(types_weights_eval), c("KM", "Cox", "RSF", "unif"), several.ok = T)
   types_weights_eval = unique(c(type_weights, types_weights_eval)) # weights for trainig are used for evaluation
+
+  if(is.null(mtry)){mtry = floor(sqrt(length(x_vars)))}
 
   # column names of mat_weights should be explicit
   if (!is.null(mat_weights) & is.null(colnames(mat_weights))) colnames(mat_weights) = paste0("w",1:ncol(mat_weights))
@@ -257,6 +265,9 @@ weighted_regression_survival = function(y_var,
     mat_weights_train = matrix(rep(0, length(types_weights_eval) * sum(data$is_train == 1) ), ncol = length(types_weights_eval))
     if (!is.null(data_test)){
       mat_weights_test = matrix(rep(0, length(types_weights_eval) * sum(data$is_train == 0) ), ncol = length(types_weights_eval))
+    }
+    if (is.null(data_test)){
+      mat_weights_test = NULL
     }
 
     for (j in 1:length(types_weights_eval)){
@@ -383,10 +394,15 @@ weighted_regression_survival = function(y_var,
                                                             mode_w_RF = mode_w_RF,
                                                             type_weights = type_weights,
                                                             max_ratio_weights_model = max_ratio_weights_model,
+                                                            ntree = ntree,
+                                                            minleaf = minleaf,
+                                                            maxdepth = maxdepth,
+                                                            mtry = mtry,
                                                             ...)
 
   weighted_regression_result$type_weights = type_weights
   weighted_regression_result$max_ratio_weights_model = max_ratio_weights_model
+  weighted_regression_result$max_ratio_weights_eval = max_ratio_weights_eval
   weighted_regression_result$mode_w_RF = mode_w_RF
   weighted_regression_result$sum_weights_train = sum_weights_train
   weighted_regression_result$n_weights_model_modif_train = n_weights_model_modif_train
@@ -452,7 +468,12 @@ make_res_weighted_regression = function(y_var,
                                         mode_w_RF,
                                         type_weights,
                                         max_ratio_weights_model,
+                                        ntree,
+                                        minleaf,
+                                        maxdepth,
+                                        mtry,
                                         ...){
+
 
   # Build and predict on train
   if (type_regression == "RF"){
@@ -461,6 +482,10 @@ make_res_weighted_regression = function(y_var,
                                       data = data_train[v_weights_model_train > 0, c("phi",x_vars)],
                                       case.wt =  v_weights_model_train[v_weights_model_train > 0],
                                       forest = T,
+                                      ntree = ntree,
+                                      mtry = mtry,
+                                      nodesize = minleaf,
+                                      nodedepth = maxdepth,
                                       ...)
 
       overfitted_predictions = randomForestSRC::predict.rfsrc(RF_fit,
@@ -473,6 +498,9 @@ make_res_weighted_regression = function(y_var,
                             x_vars = x_vars,
                             type_weights = type_weights,
                             max_ratio_weights_model = max_ratio_weights_model,
+                            ntree = ntree,
+                            minleaf = minleaf,
+                            maxdepth = maxdepth,
                             ...)
 
       overfitted_predictions = predict_rpartRF(object = rpartRF_fit,
@@ -605,6 +633,7 @@ make_res_weighted_regression = function(y_var,
     data_train = data_train[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
     v_weights_model_train = v_weights_model_train,
     mat_weights_train = mat_weights_train,
+    type_regression = type_regression,
     x_vars = x_vars,
     max_time = max_time,
     phi = phi,
@@ -669,6 +698,8 @@ rpartRF = function(data,
                    type_weights,
                    max_ratio_weights_model,
                    ntree, # peut-etre a enlever plus tard
+                   minleaf,
+                   maxdepth,
                    ...){
   list_models = list()
   for (i in 1:ntree){
@@ -689,6 +720,8 @@ rpartRF = function(data,
     model = rpart::rpart(formula = phi ~ .,
                          data = d_train[which(weights_in_bag > 0), c("phi", x_vars)],
                          weights = weights_in_bag[which(weights_in_bag > 0)],
+                         minbucket = minleaf,
+                         maxdepth = maxdepth,
                          ...)
 
     pred_nodes = predict_nodes(object = model, newdata = d_train[,x_vars])

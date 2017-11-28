@@ -165,6 +165,8 @@
 #'
 #' \item{x_vars}{See \emph{Argument}}
 #'
+#' \item{max_ratio_weights_eval}{See \emph{Argument}}
+#'
 #'
 #'
 #' @references [Gerb. et al.] to be published
@@ -374,7 +376,8 @@ Cox_regression = function(y_var,
     phi = phi,
     phi.args = phi.args,
     x_vars = x_vars,
-    censoring_rate_with_threshold = sum(data$delta_prime == 0) / nrow(data)
+    censoring_rate_with_threshold = sum(data$delta_prime == 0) / nrow(data),
+    max_ratio_weights_eval = max_ratio_weights_eval
   )
   if (!is.null(data_test)){
     result$predicted_test = as.vector(test_predictions_direct_Cox)

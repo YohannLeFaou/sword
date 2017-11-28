@@ -55,7 +55,7 @@
 #' for the provided weights (by default names will be "w1", "w2", ...)
 #' @param y_non_censored_var A character string which gives the name of the non censored \code{y_var} (default = NULL).
 #' To be used only in the context of simulated data where full about is available.
-#' @param ... Additional parameter that may be pass to the \code{\link[survival]{coxph}}
+#' @param ... Additional parameter that may be pass to the \code{\link[randomForestSRC]{rfsrc}}
 #' function (package \emph{survival})
 #'
 #'
@@ -162,6 +162,7 @@
 #'
 #' \item{x_vars}{See \emph{Argument}}
 #'
+#' \item{max_ratio_weights_eval}{See \emph{Argument}}
 #'
 #'
 #' @references [Gerb. et al.] to be published
@@ -187,6 +188,12 @@ RSF_regression = function(y_var,
                           max_ratio_weights_eval = 20,
                           mat_weights = NULL,
                           y_non_censored_var = NULL,
+
+                          # param. for RF
+                          ntree = 100,
+                          minleaf = 5,
+                          maxdepth = 6,
+                          mtry = NULL,
                           ...){
 
   # Preprocessing of the arguments & data
@@ -198,6 +205,8 @@ RSF_regression = function(y_var,
 
   eval_methods <- match.arg(as.character(eval_methods), c("concordance","single", "group", "weighted"), several.ok = T)
   types_weights_eval = match.arg(as.character(types_weights_eval), c("KM", "Cox", "RSF", "unif"), several.ok = T)
+
+  if(is.null(mtry)){mtry = floor(sqrt(length(x_vars)))}
 
   if (is.null(y_non_censored_var)) {
     phi_non_censored_name = NULL
@@ -297,6 +306,10 @@ RSF_regression = function(y_var,
                                  data = data_train[,c(y_var, delta_var, x_vars)],
                                  forest = T,
                                  ntime = ntime,
+                                 ntree = ntree,
+                                 nodesize = minleaf,
+                                 nodedepth = maxdepth,
+                                 mtry = mtry,
                                  ...)
 
   overfitted_predictions_direct_RSF =
@@ -359,7 +372,8 @@ RSF_regression = function(y_var,
     phi = phi,
     phi.args = phi.args,
     x_vars = x_vars,
-    censoring_rate_with_threshold = sum(data$delta_prime == 0) / nrow(data)
+    censoring_rate_with_threshold = sum(data$delta_prime == 0) / nrow(data),
+    max_ratio_weights_eval = max_ratio_weights_eval
   )
   if (!is.null(data_test)){
     result$predicted_test = as.vector(test_predictions_direct_RSF)
