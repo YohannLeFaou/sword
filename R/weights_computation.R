@@ -64,12 +64,12 @@ make_weights = function(data,
                         delta_name,
                         y_name2 = NULL,
                         delta_name2 = NULL,
-                        type = c("KM", "COX", "RSF", "0_1"),
+                        type = c("KM", "Cox", "RSF", "unif"),
                         max_ratio_weights,
                         x_vars = NULL,
                         censoring_model_object = TRUE){
 
-  type = match.arg(as.character(type), c("KM", "Cox", "RSF", "0_1"))
+  type = match.arg(as.character(type), c("KM", "Cox", "RSF", "unif"))
   if (is.null(y_name2)) y_name2 = y_name
   if (is.null(delta_name2)) delta_name2 = delta_name
 
@@ -80,7 +80,7 @@ make_weights = function(data,
   # rmk : no need to fill list_result$censoring_model_object if "censoring_model_object = TRUE" :
   # list_result$censoring_model_object will return "NULL" by default
 
-  if (type == "0_1"){
+  if (type == "unif"){
     weights = data[,delta_name]
   }
 

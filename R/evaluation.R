@@ -1,4 +1,37 @@
 
+#' @title Compute the prediction of a model built with \code{\link{Cox_regression}}
+#'
+#' @description Given an output from \code{\link{Cox_regression}},
+#' \code{predict_Cox_regression} allows to get its predictions for new
+#' observations
+#'
+#' @param object A list output by \code{\link{Cox_regression}}
+#' @param newdata A data.frame which contains the same variables as the ones
+#' used for the training
+#' @return A list with the following elements :
+#' \item{predicted}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
+#' \item{survival}{The matrix which contains the estimated values of the survival curves at
+#' \code{time_points}, for the observations of \code{newdata}}
+#' \item{time_points}{The vector of the time points where the survival curves
+#' are evaluated}
+#'
+#' @seealso \code{\link{Cox_regression}}
+#'
+#' @examples
+#'
+#' data(veteran, package = "randomForestSRC")
+#' set.seed(17)
+#' train_lines = sample(1:nrow(veteran), 120)
+#' res1 = Cox_regression(y_var = "time",
+#'                       delta_var = "status",
+#'                       x_vars = setdiff(colnames(veteran),c("time","status")),
+#'                       data_train = veteran[train_lines,],
+#'                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+#'
+#' pred1 = predict_Cox_regression(object = res1, newdata = veteran[-train_lines,])
+#' print(pred1$predicted)
+
 
 eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
                                     max_time,  method, phi, phi.args,
@@ -57,65 +90,56 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
              (1 - 1/length(phi_by_group) * sum((phi_by_group - mean_pred_by_group)^2) / stats::sd(phi_by_group)^2) # R2
     ))
   }
-  if (method == "single"){
-
-    # add a column giving the group number
-    index_event = which(data[,delta_name] == 1)
-    n_groups = length(index_event)
-    if (data[1,delta_name] == 0){
-      groups = rep(x = 1:n_groups, times = index_event - c(0,index_event[1:(n_groups-1)]))
-      data = data[1:length(groups),]
-    }
-    if (data[1,delta_name] == 1){
-      groups = rep(x = 1:(n_groups-1), times = (index_event[2:(n_groups)] ) - c(index_event[1:(n_groups-1)]))
-      groups = c(groups, rep(n_groups, times = nrow(data) - length(groups) ))
-    }
-    data$group = groups
-
-    # compute empirical phi of the group & mean prediction inside the group
-    phi_by_group = c()
-    mean_pred_by_group = c()
-    weights = c()
-    for (i in 1:n_groups){
-
-      # empirical phi inside the group (KM estimate)
-      b = data[which(data$group == i),]
-      jump_size = 1 / sum(b[,y_name] >= b[which(b[,delta_name] == 1), y_name])
-      phi_by_group[i] =
-        jump_size * do.call(phi, c(list(x=b[which(b[,delta_name] == 1),y_name]), phi.args)) +
-        (1 - jump_size) * do.call(phi, c(list(x=max_time), phi.args))
-
-      mean_pred_by_group[i] = mean(data$pred[data$group == i])
-      weights[i] = nrow(b)
-    }
-
-    # compare empirical phi of the group with mean prediction inside the group
-    mean_phi_by_group = sum( weights * phi_by_group ) / sum(weights)
-
-    return(c(NormalizedGini(solutions = 1:sum(weights),
-                            predictions = rep(x = phi_by_group, times = weights)),
-             (1 + stats::cor.test(1:sum(weights),
-                           rep(x = phi_by_group, times = weights),
-                           method = "kendall")$estimate)/2,
-             (1 - sum( weights * (phi_by_group - mean_pred_by_group)^2) /
-                sum( weights * (phi_by_group - mean_phi_by_group)^2))
-    ))
-  }
 }
+
+#' @title helper function
+#'
+#' @description function called by \code{\link{NormalizedGini}}
+#'
+#' @seealso \code{\link{NormalizedGini}}
 
 
 SumModelGini <- function(solutions, predictions, weights){
   ## function called by NormalizedGini
 
-  df = data.frame(solutions = solutions, predictions = predictions, weights = weights)
+  df = data.frame(rank_solutions = rank(solutions), predictions = predictions, weights = weights)
   df <- df[order(df$predictions, decreasing = TRUE),]
   df$random = (1:nrow(df))/nrow(df)
-  totalPos <- sum(df$weights * df$solutions)
-  df$cumPosFound <- cumsum(df$weights * df$solutions) # this will store the cumulative number of positive examples found (used for computing "Model Lorentz")
+  totalPos <- sum(df$weights * df$rank_solutions)
+  df$cumPosFound <- cumsum(df$weights * df$rank_solutions) # this will store the cumulative number of positive examples found (used for computing "Model Lorentz")
   df$Lorentz <- df$cumPosFound / totalPos # this will store the cumulative proportion of positive examples found ("Model Lorentz")
   df$Gini <- df$Lorentz - df$random # will store Lorentz minus random
   return(sum(df$Gini))
 }
+
+
+#' @title Compute a Gini goodness of fit statistic
+#'
+#' @description Given a vector of observed values \code{solutions} and a vector
+#' of predicted values \code{predictions}, the Gini index
+#' measures how well the order of the predicted values corresponds
+#' to the order of the observed values.
+#'
+#' @param solutions A vector of observed values
+#' @param predictions A vector of predicted values
+#' @param weights A vector of weights for the single observations (défault = \code{NULL}).
+#' If \code{NULL}, then weights are taken as equal to 1
+#'
+#' @details
+#' \itemize{
+#' \item \code{solutions} is transformed into \code{rank(solutions)} before we compute
+#' the gini coefficient
+#' \item The weighted Gini index may not give meaningfull information if \code{weights}
+#' depends on \code{predictions}
+#' }
+#'
+#' @return The real number giving the value of the Gini index
+#'
+#' @seealso \code{\link{SumModelGini}}
+#'
+#' @examples
+#'
+
 
 NormalizedGini <- function(solutions, predictions, weights = NULL) {
   # function which computes the Gini index of performance of a model
@@ -127,15 +151,34 @@ NormalizedGini <- function(solutions, predictions, weights = NULL) {
 }
 
 
+#' @title Compute weighted quadratic errors statistics
+#'
+#' @description Given a vector of observed values \code{solutions} and a vector
+#' of predicted values \code{predictions}, compute the Mean Squared Error (MSE) and
+#' the percentage of explained variance (R2) statistics.
+#'
+#' @param solutions A vector of observed values
+#' @param predictions A vector of predicted values
+#' @param weights A vector of weights for the single observations (défault = \code{NULL}).
+#' If \code{NULL}, then weights are taken as equal to 1
+#'
+#' @return The vector with the value of the MSE (index 1) and the R2 statistics
+#'
+#' @seealso \code{\link{SumModelGini}}
+#'
+#' @examples
+#'
 
-eval_weighted_criteria = function(predictions, solutions, weights){
+eval_weighted_criteria = function(predictions, solutions, weights = NULL){
+  if(!is.null(weights)){weights = weights / sum(weights)}
+  if(is.null(weights)){weights = rep(1 / length(solutions), length(solutions))}
   mean = sum(weights * solutions)
-  return(
-    c(sum(weights * (solutions - predictions)^2), # mse
-      (1 - sum(weights * (solutions - predictions)^2) / # R2
-         sum(weights * (solutions - mean)^2))
-    )
+  scores = c(sum(weights * (solutions - predictions)^2), # mse
+             (1 - sum(weights * (solutions - predictions)^2) / # R2
+                sum(weights * (solutions - mean)^2))
   )
+  names(scores) = c("mse", "R2")
+  return(scores)
 }
 
 
@@ -166,21 +209,6 @@ eval_model = function(predictions,
                                                  predictions)
       )$concordance
     list_criteria$concordance = concordance
-  }
-
-
-  if ("single" %in% eval_methods){
-    criteria_single = eval_aggregated_criteria(model_predictions = predictions,
-                                               data = data[,c("y_prime","delta_prime")],
-                                               y_name = "y_prime",
-                                               delta_name = "delta_prime", # important to set delta_prime such the group are good in method "single"
-                                               max_time = max_time,
-                                               method = "single",
-                                               phi = phi,
-                                               phi.args = phi.args
-    )
-    names(criteria_single) = c("Gini_single","Kendall_single","R2_single")
-    list_criteria$criteria_single = criteria_single
   }
 
   if ("group" %in% eval_methods){

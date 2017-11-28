@@ -49,7 +49,7 @@ See \emph{Details - Evaluation criteria} for more information}
 
 \item{types_weights_eval}{A vector of character strings which gives the types of weights to be used for IPCW
 (Inverse Probability of Censoring Weighting) in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
-Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"0_1"}. See
+Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. See
 \emph{Details - Evaluation criteria} for more information}
 
 \item{max_ratio_weights_eval}{A real number which gives the maximum admissible ratio
@@ -114,9 +114,11 @@ and \code{phi}\eqn{(T')} }
 \code{Cox_regression} is a benchmark model we use in [Gerb. et al.] (see §?). To model the
 variable \code{phi}\eqn{(T)}, where \eqn{T} is a right censored time and \code{phi} is a given function, we first
 fit a Cox model to the data to estimate the survival function of \eqn{T} given the covariates. Then,
-we deduce an estimator of \code{phi}\eqn{(T)} by integration of the function \code{phi} w.r.t. the
-estimated survival function. Different method are available to assess the quality of fit of
-\code{Cox_regression}. \cr \cr
+we deduce an estimator of \code{phi}\eqn{(T)} by integration of the function \code{phi} with respect
+to the
+estimated survival function. Different methods are available to assess the quality of fit of
+\code{Cox_regression}. \code{Cox_regression} is a wrapper for the \code{\link[survival]{coxph}}
+function\cr \cr
 The notations we use are :
 \itemize{
 \item \eqn{C} : Censoring variable
@@ -139,8 +141,8 @@ to estimate the quadratic error of the model in the context of right censoring. 
 are the IPC weights, and \eqn{(\hat{y}_i)i} are the predictions made.
 
 The \code{types_weights_eval} argument allows the use of four kinds of IPC weights :
-\code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"0_1"}. The first three types of weights correspond
-to different ways to estimate the survival function of the censoring. On the other hand, \code{"0_1"}
+\code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. The first three types of weights correspond
+to different ways to estimate the survival function of the censoring. On the other hand, \code{"unif"}
 corresponds to \eqn{W_i = 1} for all i.
 
 Since the IPC weights may take too large values in some situation, \code{max_ratio_weights_eval} allows
@@ -191,16 +193,11 @@ number of groups are available. This criteria has a high variance if applied to 
 }
 \examples{
 
-data(veteran, package = "randomForestSRC")
-res1 = Cox_regression(y_var = "time", delta_var = "status",
-                      x_vars = setdiff(colnames(veteran),c("time","status")),
-                      data_train = veteran)
-print(res1$list_criteria_train)
 }
 \references{
-[Gerb. et al.] notre article
+[Gerb. et al.] to be published
 }
 \seealso{
-\code{\link[survival]{coxph}}, \code{\link{RSF_regression}}, \url{http://rstudio.com}
+\code{\link[survival]{coxph}}, \code{\link{predict_Cox_regression}}, \url{http://rstudio.com}
 (only here for the example)
 }

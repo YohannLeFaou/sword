@@ -4,8 +4,9 @@
 #' @description \code{Cox_regression} is a benchmark model we use in [Gerb. et al.] (see §?). To model the
 #' variable \code{phi}\eqn{(T)}, where \eqn{T} is a right censored time and \code{phi} is a given function, we first
 #' fit a Cox model to the data to estimate the survival function of \eqn{T} given the covariates. Then,
-#' we deduce an estimator of \code{phi}\eqn{(T)} by integration of the function \code{phi} w.r.t. the
-#' estimated survival function. Different method are available to assess the quality of fit of
+#' we deduce an estimator of \code{phi}\eqn{(T)} by integration of the function \code{phi} with respect
+#' to the
+#' estimated survival function. Different methods are available to assess the quality of fit of
 #' \code{Cox_regression}. \code{Cox_regression} is a wrapper for the \code{\link[survival]{coxph}}
 #' function\cr \cr
 #' The notations we use are :
@@ -42,7 +43,7 @@
 #' See \emph{Details - Evaluation criteria} for more information
 #' @param types_weights_eval A vector of character strings which gives the types of weights to be used for IPCW
 #' (Inverse Probability of Censoring Weighting) in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
-#' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"0_1"}. See
+#' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. See
 #' \emph{Details - Evaluation criteria} for more information
 #' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio
 #' for the IPC weights (default = 1000).
@@ -73,8 +74,8 @@
 #' are the IPC weights, and \eqn{(\hat{y}_i)i} are the predictions made.
 #'
 #' The \code{types_weights_eval} argument allows the use of four kinds of IPC weights :
-#' \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"0_1"}. The first three types of weights correspond
-#' to different ways to estimate the survival function of the censoring. On the other hand, \code{"0_1"}
+#' \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. The first three types of weights correspond
+#' to different ways to estimate the survival function of the censoring. On the other hand, \code{"unif"}
 #' corresponds to \eqn{W_i = 1} for all i.
 #'
 #' Since the IPC weights may take too large values in some situation, \code{max_ratio_weights_eval} allows
@@ -86,8 +87,8 @@
 #' weights will also be threshold w.r.t. \code{max_ration_weights_eval}). \code{mat_weights} should be a
 #' matrix satisfying \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)}, any numbers of
 #' columns may be provided and then each column of the matrix corresponds to a type of weights.
-#'Columns name of the matrix are taken as names for the different types of weights. If there is no
-#'column name, then default names are "w1", "w2', ...
+#' Columns name of the matrix are taken as names for the different types of weights. If there is no
+#' column name, then default names are "w1", "w2', ...
 #'
 #'
 #' \item \code{"concordance"} : The concordance is a classical measure of performance when modelling
@@ -166,20 +167,14 @@
 #'
 #'
 #'
-#' @references [Gerb. et al.] notre article
+#' @references [Gerb. et al.] to be published
 #'
-#' @seealso \code{\link[survival]{coxph}}, \code{\link{RSF_regression}}, \url{http://rstudio.com}
+#' @seealso \code{\link[survival]{coxph}}, \code{\link{predict_Cox_regression}}, \url{http://rstudio.com}
 #' (only here for the example)
 #'
 #'
 #' @examples
 #'
-#' data(veteran, package = "randomForestSRC")
-#' res1 = Cox_regression(y_var = "time", delta_var = "status",
-#'                       x_vars = setdiff(colnames(veteran),c("time","status")),
-#'                       data_train = veteran)
-#' print(res1$list_criteria_train)
-
 
 
 Cox_regression = function(y_var,
@@ -206,8 +201,8 @@ Cox_regression = function(y_var,
   # column names of mat_weights should be explicit
   if(!is.null(mat_weights) & is.null(colnames(mat_weights))) colnames(mat_weights) = paste0("w",1:ncol(mat_weights))
 
-  eval_methods <- match.arg(as.character(eval_methods), c("concordance","single", "group", "weighted"), several.ok = T)
-  types_weights_eval = match.arg(as.character(types_weights_eval), c("KM", "Cox", "RSF", "0_1"), several.ok = T)
+  eval_methods <- match.arg(as.character(eval_methods), c("concordance", "group", "weighted"), several.ok = T)
+  types_weights_eval = match.arg(as.character(types_weights_eval), c("KM", "Cox", "RSF", "unif"), several.ok = T)
 
   if (is.null(y_non_censored_var)) {
     phi_non_censored_name = NULL
@@ -398,15 +393,39 @@ Cox_regression = function(y_var,
   return(result)
 }
 
-#' Compute the prediction of a model built with Cox_regression
+
+#' @title Compute the prediction of a model built with \code{\link{Cox_regression}}
 #'
-#' @param object An output from Cox_regression
-#' @param newdata A dataframe which contains the same variables as the ones used for the training
+#' @description Given a model built wtih \code{\link{Cox_regression}},
+#' \code{predict_Cox_regression} allows to get the predictions of the model for new
+#' observations
+#'
+#' @param object A list output by \code{\link{Cox_regression}}
+#' @param newdata A data.frame which contains the same variables as the ones
+#' used for the training
 #' @return A list with the following elements :
-#' \item{predicted}{A vector of the predicted values for phi(T)}
-#' \item{survival}{A dataframe (matrix) of the predicted survival curves given by the Cox model}
-#' \item{time_points}{A vector of the time points where the survival curves are evaluated}
+#' \item{predicted}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
+#' \item{survival}{The matrix which contains the estimated values of the survival curves at
+#' \code{time_points}, for the observations of \code{newdata}}
+#' \item{time_points}{The vector of the time points where the survival curves
+#' are evaluated}
+#'
+#' @seealso \code{\link{Cox_regression}}
+#'
 #' @examples
+#'
+#' data(veteran, package = "randomForestSRC")
+#' set.seed(17)
+#' train_lines = sample(1:nrow(veteran), 120)
+#' res1 = Cox_regression(y_var = "time",
+#'                       delta_var = "status",
+#'                       x_vars = setdiff(colnames(veteran),c("time","status")),
+#'                       data_train = veteran[train_lines,],
+#'                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+#'
+#' pred1 = predict_Cox_regression(object = res1, newdata = veteran[-train_lines,])
+#' print(pred1$predicted)
 #'
 #'
 predict_Cox_regression = function(object, newdata){
