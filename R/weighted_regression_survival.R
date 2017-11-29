@@ -2,13 +2,14 @@
 #' @title Fit classical regression model (GAM, RF) on right censored data using IPCW
 #'
 #' @description \code{weighted_regression_survival} is the core function of the package.
-#' It implements the regression method adapted to right censored variable that
-#' we study in [Gerb. et al.]. Given a right censored variable \eqn{T} a
+#' It implements the method we study in [Gerb. et al.] to adapt regression
+#' algorithms to right censored target variable. Given a right
+#' censored variable \eqn{T}, a
 #' function \code{phi} and covariates \eqn{X}, \code{weighted_regression_survival}
 #' aims to estimate \eqn{E[}\code{phi}\eqn{(T)|X]}. The methods is based on the
 #' IPCW (Inverse probability of Censoring Weighting) principle for right
-#' censored variable which is use to compensate for the censoring. Though the method
-#' may generalise to many regression algorithm, \code{weighted_regression_survival}
+#' censored variables which is used to compensate for the censoring. Though the method
+#' may generalise to many regression algorithms, \code{weighted_regression_survival}
 #' only implements random forest and GAM solutions.
 #' Technicaly, \code{weighted_regression_survival} is a wrapper for
 #' \code{\link[randomForestSRC]{rfsrc}} and \code{\link[rpart]{rpart}}(random

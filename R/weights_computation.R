@@ -55,7 +55,8 @@ make_KM_weights = function(vect_y, vect_delta, vect_c = NULL){
              method = "linear",
              rule = 2)
   weights = ifelse(vect_delta == 0, 0, 1/N * 1/w$y)
-  return(weights)
+  return(list(weights = weights,
+              censoring_survfit = km_c))
 }
 
 
@@ -88,8 +89,12 @@ make_weights = function(data,
     if (sum(data[,delta_name]) == nrow(data)){
       weights = rep(1/nrow(data), nrow(data))
     } else {
-      weights = make_KM_weights(vect_y = data[,y_name],
-                                vect_delta = data[,delta_name])
+      res_KM_weights = make_KM_weights(vect_y = data[,y_name],
+                                    vect_delta = data[,delta_name])
+      weights = res_KM_weights$weights
+      if (censoring_model_object){
+        list_result$censoring_model_object = res_KM_weights$censoring_survfit
+      }
     }
   }
 
