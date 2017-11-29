@@ -109,6 +109,8 @@ and \code{phi}\eqn{(T')} }
 \item{phi.args}{See \emph{Argument}}
 
 \item{x_vars}{See \emph{Argument}}
+
+\item{max_ratio_weights_eval}{See \emph{Argument}}
 }
 \description{
 \code{Cox_regression} is a benchmark model we use in [Gerb. et al.] (see §?). To model the

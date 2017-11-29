@@ -53,6 +53,10 @@
 #' should correspond to a type of weights (multiple columns are possible).
 #' Column names of \code{mat_weights} may be used to specify names
 #' for the provided weights (by default names will be "w1", "w2", ...)
+#' @param ntree
+#' @param minleaf
+#' @param maxdepth
+#' @param mtry
 #' @param y_non_censored_var A character string which gives the name of the non censored \code{y_var} (default = NULL).
 #' To be used only in the context of simulated data where full about is available.
 #' @param ... Additional parameter that may be pass to the \code{\link[randomForestSRC]{rfsrc}}
@@ -167,7 +171,7 @@
 #'
 #' @references [Gerb. et al.] to be published
 #'
-#' @seealso \code{\link[survival]{coxph}}, \code{\link{predict_Cox_regression}}, \url{http://rstudio.com}
+#' @seealso \code{\link[randomForestSRC]{rfsrc}}, \code{\link{predict_RSF_regression}}, \url{http://rstudio.com}
 #' (only here for the example)
 #'
 #'

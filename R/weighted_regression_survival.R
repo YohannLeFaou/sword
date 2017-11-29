@@ -1,22 +1,26 @@
 
 #' @title Fit classical regression model (GAM, RF) on right censored data using IPCW
 #'
-#' @description \code{weighted_regression_survival}
-#'
-#' @description \code{RSF_regression} is a benchmark model we use in [Gerb. et al.] (see §?).
-#' To model the variable \code{phi}\eqn{(T)}, where \eqn{T} is a right censored time and
-#' \code{phi} is a given function, we first
-#' fit a RSF model to the data to estimate the survival function of \eqn{T} given the covariates. Then,
-#' we deduce an estimator of \code{phi}\eqn{(T)} by integration of the function \code{phi} with respect
-#' to the estimated survival function. Different methods are available to assess the quality of fit of
-#' \code{RSF_regression}. \code{RSF_regression} is a wrapper for the \code{\link[randomForestSRC]{rfsrc}}
-#' function\cr \cr
+#' @description \code{weighted_regression_survival} is the core function of the package.
+#' It implements the regression method adapted to right censored variable that
+#' we study in [Gerb. et al.]. Given a right censored variable \eqn{T} a
+#' function \code{phi} and covariates \eqn{X}, \code{weighted_regression_survival}
+#' aims to estimate \eqn{E[}\code{phi}\eqn{(T)|X]}. The methods is based on the
+#' IPCW (Inverse probability of Censoring Weighting) principle for right
+#' censored variable which is use to compensate for the censoring. Though the method
+#' may generalise to many regression algorithm, \code{weighted_regression_survival}
+#' only implements random forest and GAM solutions.
+#' Technicaly, \code{weighted_regression_survival} is a wrapper for
+#' \code{\link[randomForestSRC]{rfsrc}} and \code{\link[rpart]{rpart}}(random
+#' forest) and \code{\link[mgcv]{gam}} (GAM). Different methods are available
+#' to assess the quality of fit of \code{RSF_regression}.\cr \cr
 #' The notations we use are :
 #' \itemize{
 #' \item \eqn{C} : Censoring variable
 #' \item \eqn{Y = min(T, C)}
 #' \item \eqn{\delta = 1_{T \le C}}  (delta)
 #' }
+#'
 #'
 #'
 #' @param y_var A character string which gives the name of the \eqn{Y} variable
@@ -32,8 +36,10 @@
 #' @param max_time A real number giving a threshold for \code{y_var} (default = \code{NULL}).
 #' If \code{NULL}, then \code{max_time} is set to the maximum non censored observation
 #' of \code{y_var} among the training set. We note \eqn{T' = min(T,} \code{max_time}\eqn{)}
-#' @param RSF_object A boolean which indicates if the RSF model fitted to the training data should
+#' @param weighted_regression_object A boolean which indicates if the random forest
+#' model fitted to the training data should
 #' be returned (default = \code{TRUE})
+#' @param censoring_model_object a voir
 #' @param eval_methods A vector of character strings which gives the methods that should be
 #' used for the evaluation of the model (default = \code{c("concordance","weighted")}).
 #' Possible choices are \code{"concordance"}, \code{"weighted"} and \code{"group"}. Multiple choices are possible.
@@ -46,18 +52,29 @@
 #' (Inverse Probability of Censoring Weighting) in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
 #' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. See
 #' \emph{Details - Evaluation criteria} for more information
-#' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio
-#' for the IPC weights (default = 1000).
+#' @param max_ratio_weights_model A real number which gives the maximum admissible ratio
+#' for the IPC weights (default = 1000) used in model fitting.
 #' See \emph{Details - Evaluation criteria} for more information
-#' @param mat_weights A matrix to provide handmade IPC weights for the model evaluation (default = \code{NULL}).
-#' \code{mat_weights} should satisfied \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)} and a column
+#' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio
+#' for the IPC weights (default = 1000) used in model evaluation.
+#' See \emph{Details - Evaluation criteria} for more information
+#' @param mat_weights A matrix to provide handmade IPC weights for the model
+#' evaluation (default = \code{NULL}).
+#' \code{mat_weights} should satisfied \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)}
+#' and a column
 #' should correspond to a type of weights (multiple columns are possible).
 #' Column names of \code{mat_weights} may be used to specify names
 #' for the provided weights (by default names will be "w1", "w2", ...)
-#' @param y_non_censored_var A character string which gives the name of the non censored \code{y_var} (default = NULL).
-#' To be used only in the context of simulated data where full about is available.
-#' @param ... Additional parameter that may be pass to the \code{\link[survival]{coxph}}
-#' function (package \emph{survival})
+#' @param y_non_censored_var A character string which gives the name of the
+#' non censored \code{y_var} (default = NULL).
+#' To be used only in the context of simulated data where full about is available
+#' @param mode_w_RF
+#' @param ntree
+#' @param minleaf
+#' @param maxdepth
+#' @param mtry attention ne sert à rien si utiliser avec \code{mode_w_RF = 2}
+#' @param ... Additional parameter that may be pass to the regression algorithm used
+#' (see \emph{Details - Additional parameters})
 #'
 #'
 #' @details
@@ -120,22 +137,32 @@
 #' number of groups are available. This criteria has a high variance if applied to small test sample.
 #'
 #' }
+#'
+#' \item \emph{Additional parameters}
+#'
+#' blabla
 #' }
 #'
 #' @return A list with the following elements :
+#'
 #' \item{predicted_train}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of the train set}
+#'
 #' \item{predicted_test}{The vector of the predicted values for
 #' \code{phi}\eqn{(T')} for the observations of the test set (require \code{data_test} != \code{NULL})}
+#'
 #' \item{list_criteria_train}{The list with the values for the evaluation criteria computed on the train
 #' set}
+#'
 #' \item{list_criteria_test}{The list with the values for the evaluation criteria computed on the test
 #' set (require \code{data_test} != \code{NULL}))}
-#' \item{survival_train}{The matrix which contains the estimated values of the survival curves at
-#' \code{time_points} (with the Cox model), for the observations of the train set}
-#' \item{survival_test}{The matrix which contains the estimated values of the survival curves at
-#' \code{time_points}, for the observations of the test set (require \code{data_test} != \code{NULL})}
-#' \item{time_points}{The vector of the time points where the survival curves are evaluated}
+#'
+#' \item{v_weights_model_train}{balbl}
+#' \item{sum_weights_train}{balbl}
+#' \item{n_weights_model_modif_train}{balbl}
+#'
+#' \item{sum_weights_test}{bla}
+#' \item{n_weights_model_modif_test}{bla}
 #'
 #' \item{mat_weights_train}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the train set}
@@ -143,19 +170,37 @@
 #' \item{mat_weights_test}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the test set}
 #'
-#' \item{RSF_object}{The object returned by the \code{coxph} function}
+#' \item{weighted_RF_object}{The object returned by the random forest function used}
+#'
+#' \item{weighted_gam_object}{vérifier que c'est bien ça le nom}
 #'
 #' \item{max_time}{The real number giving the threshold used by the model}
 #'
 #' \item{censoring_rate_with_threshold}{The real number giving the rate of censoring
 #' of \eqn{T'}, computed on the concatenation of \code{data_train} and \code{data_test}}
 #'
+#'
+#' Seulement si on utilise le mode 2 sur la foret aleatoire :
+#'
+#' \item{survival_train}{The matrix which contains the estimated values of the survival curves at
+#' \code{time_points} (with the Cox model), for the observations of the train set}
+#'
+#' \item{survival_test}{The matrix which contains the estimated values of the survival curves at
+#' \code{time_points}, for the observations of the test set (require \code{data_test} != \code{NULL})}
+#'
+#' \item{time_points}{The vector of the time points where the survival curves are evaluated}
+#'
 #' \item{data_train}{The data.frame of the train data provided as arguments, plus columns :
 #' \eqn{Y' = min(Y,} \code{max_time} \eqn{)}, \eqn{\delta' = 1_{T' \le C}}
 #' and \code{phi}\eqn{(T')} }
+#'
 #' \item{data_test}{The data.frame of the test data provided as arguments, plus columns :
 #' \eqn{Y' = min(Y,} \code{max_time} \eqn{)}, \eqn{\delta' = 1_{T' \le C}}
 #' and \code{phi}\eqn{(T')} }
+#'
+#' \item{type_regression}{}
+#'
+#' \item{type_weights}{}
 #'
 #' \item{phi}{See \emph{Argument}}
 #'
@@ -163,12 +208,19 @@
 #'
 #' \item{x_vars}{See \emph{Argument}}
 #'
+#' \item{max_ratio_weights_model}{}
+#'
 #' \item{max_ratio_weights_eval}{See \emph{Argument}}
+#'
+#' \item{mode_w_RF}{}
+#'
+#' voir si il n'y a pas d'autres output si j'utilise d'autres algo de regression
 #'
 #' @references [Gerb. et al.] to be published
 #'
-#' @seealso \code{\link[survival]{coxph}}, \code{\link{predict_Cox_regression}}, \url{http://rstudio.com}
-#' (only here for the example)
+#' @seealso \code{\link[randomForestSRC]{rfsrc}}, \code{\link[rpart]{rpart}},
+#' \code{\link[mgcv]{gam}},
+#' \code{\link{predict_weighted_regression_survival}}
 #'
 #'
 #' @examples
@@ -192,9 +244,9 @@ weighted_regression_survival = function(y_var,
                                         max_ratio_weights_eval = 1000,
                                         mat_weights = NULL, # we say that when mat_weights is not NULL, and type_weights is NULL, the column 1 of mat_weights is employed for fitting
                                         y_non_censored_var = NULL,
-                                        mode_w_RF = 1,
 
                                         # param for RF
+                                        mode_w_RF = 1,
                                         ntree = 100,
                                         minleaf = 5,
                                         maxdepth = 6,
