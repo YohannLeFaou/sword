@@ -145,6 +145,12 @@
 #' \item{mat_weights_test}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the test set}
 #'
+#' \item{n_weights_eval_modif_train}{The vector giving the number of train weights modified due to
+#' \code{max_ratio_weights_eval}}
+#'
+#' \item{n_weights_eval_modif_test}{The vector giving the number of test weights modified due to
+#' \code{max_ratio_weights_eval}}
+#'
 #' \item{cox_object}{The object returned by the \code{coxph} function}
 #'
 #' \item{max_time}{The real number giving the threshold used by the model}
@@ -274,6 +280,12 @@ Cox_regression = function(y_var,
 
   # Thresholding of the weights_eval
   ## train
+
+  n_weights_eval_modif_train = apply(X = mat_weights_train, MARGIN = 2,
+                                     FUN = function(x){
+                                       x = sum(x > min(x[x > 0]) * max_ratio_weights_eval)
+                                     })
+
   mat_weights_train = apply(X = mat_weights_train, MARGIN = 2,
                             FUN = function(x){
                               x = pmin(x, min(x[x > 0]) * max_ratio_weights_eval)
@@ -281,6 +293,12 @@ Cox_regression = function(y_var,
                             })
   ## test
   if (!is.null(data_test)){
+
+    n_weights_eval_modif_test = apply(X = mat_weights_test, MARGIN = 2,
+                                      FUN = function(x){
+                                        x = sum(x > min(x[x > 0]) * max_ratio_weights_eval)
+                                      })
+
     mat_weights_test = apply(X = mat_weights_test, MARGIN = 2,
                              FUN = function(x){
                                x = pmin(x, min(x[x > 0]) * max_ratio_weights_eval)
@@ -377,13 +395,15 @@ Cox_regression = function(y_var,
     phi.args = phi.args,
     x_vars = x_vars,
     censoring_rate_with_threshold = sum(data$delta_prime == 0) / nrow(data),
-    max_ratio_weights_eval = max_ratio_weights_eval
+    max_ratio_weights_eval = max_ratio_weights_eval,
+    n_weights_eval_modif_train = n_weights_eval_modif_train
   )
   if (!is.null(data_test)){
     result$predicted_test = as.vector(test_predictions_direct_Cox)
     result$list_criteria_test = list_criteria_test
     result$data_test = data_test[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
     result$mat_weights_test = mat_weights_test
+    result$n_weights_eval_modif_test = n_weights_eval_modif_test
   }
   if (cox_object){
     result$cox_object = Cox

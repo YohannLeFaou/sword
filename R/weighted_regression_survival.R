@@ -25,55 +25,100 @@
 #'
 #'
 #' @param y_var A character string which gives the name of the \eqn{Y} variable
+#'
 #' @param delta_var A character string which gives the name of the \eqn{\delta} variable (this variable
 #' should be binary : 1 = non censored, 0 = censored)
+#'
 #' @param x_vars A vector of character strings which gives the names of the explanatory variables
+#'
 #' @param data_train A data.frame of training observations. It must contain the column names \code{y_var},
 #' \code{delta_var} and \code{x_vars}
+#'
 #' @param data_test A data.frame of testing observations (default = \code{NULL})
+#'
+#' @param type_regression A character string giving the regression algorithm to use
+#' in the model (default = \code{"RF"})
+#'
 #' @param phi A function to be applied to \code{y_var}
+#'
 #' @param phi.args A list of additional parameters for the function \code{phi} (default = NULL).
 #' See \emph{Examples} for a use case
+#'
 #' @param max_time A real number giving a threshold for \code{y_var} (default = \code{NULL}).
 #' If \code{NULL}, then \code{max_time} is set to the maximum non censored observation
 #' of \code{y_var} among the training set. We note \eqn{T' = min(T,} \code{max_time}\eqn{)}
+#'
 #' @param weighted_regression_object A boolean which indicates if the random forest
 #' model fitted to the training data should
 #' be returned (default = \code{TRUE})
-#' @param censoring_model_object a voir
+#'
+#' @param censoring_model_object A boolean which indicates if the
+#' model fitted to the censoring variable to compute the weights
+#' ("KM", "Cox" or "RSF") used for training should
+#' be returned (default = \code{TRUE})
+#'
 #' @param eval_methods A vector of character strings which gives the methods that should be
 #' used for the evaluation of the model (default = \code{c("concordance","weighted")}).
-#' Possible choices are \code{"concordance"}, \code{"weighted"} and \code{"group"}. Multiple choices are possible.
+#' Possible choices are \code{"concordance"}, \code{"weighted"}
+#' and \code{"group"}. Multiple choices are possible.
 #' See \emph{Details - Evaluation criteria} for more information
+#'
 #' @param v_bandwidth A vector of real numbers for the bandwidths to use for the model
 #' evaluation if \code{"group"} is used
-#' as an \code{eval_method} (default = \code{c(20)}). Only used if \code{"group"} is used as \code{eval_method}.
+#' as an \code{eval_method} (default = \code{c(20)}). Only used if
+#' \code{"group"} is used as \code{eval_method}.
 #' See \emph{Details - Evaluation criteria} for more information
-#' @param types_weights_eval A vector of character strings which gives the types of weights to be used for IPCW
-#' (Inverse Probability of Censoring Weighting) in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
+#'
+#' @param types_weights_eval A vector of character strings which gives the
+#' types of weights to be used for IPCW
+#' (Inverse Probability of Censoring Weighting) in the model evaluation
+#' (default = \code{c("KM")} (Kaplan Meier)).
 #' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. See
 #' \emph{Details - Evaluation criteria} for more information
+#'
 #' @param max_ratio_weights_model A real number which gives the maximum admissible ratio
 #' for the IPC weights (default = 1000) used in model fitting.
 #' See \emph{Details - Evaluation criteria} for more information
+#'
 #' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio
 #' for the IPC weights (default = 1000) used in model evaluation.
 #' See \emph{Details - Evaluation criteria} for more information
+#'
 #' @param mat_weights A matrix to provide handmade IPC weights for the model
 #' evaluation (default = \code{NULL}).
-#' \code{mat_weights} should satisfied \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)}
-#' and a column
-#' should correspond to a type of weights (multiple columns are possible).
+#' \code{mat_weights} should satisfied
+#' \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)}
+#' and a column should correspond to a type of weights
+#' (multiple columns are possible).
 #' Column names of \code{mat_weights} may be used to specify names
 #' for the provided weights (by default names will be "w1", "w2", ...)
+#'
 #' @param y_non_censored_var A character string which gives the name of the
-#' non censored \code{y_var} (default = NULL).
+#' non censored \code{y_var} (default = \code{NULL}).
 #' To be used only in the context of simulated data where full about is available
-#' @param mode_w_RF
-#' @param ntree
-#' @param minleaf
-#' @param maxdepth
-#' @param mtry attention ne sert à rien si utiliser avec \code{mode_w_RF = 2}
+#'
+#' @param mode_w_RF An integer (\code{1} or \code{2}) which specifiy the type of weighted
+#' random forest to grow : \code{1} = wRF1, \code{2} = wRF2 or wRF3 (default = \code{1}).
+#' See \emph{Details - Random Forest modes} for more information.
+#' Only used if \code{type_regression = "RF"}
+#'
+#' @param ntree A positive integer which gives the number of trees to grow
+#' in the forest (default = \code{100}).
+#'
+#' @param minleaf A positive integer indicating the minimum number of observations
+#' that must be present in a (terminal) leaf (default = \code{5}).
+#'
+#' @param maxdepth A positive integer indicating the maximum number of layers
+#' in individual trees (default = 6).
+#'
+#' @param mtry A positive integer indicating the number of random variables
+#' to draw at each node for the split selection (default = \code{NULL}).
+#' If \code{NULL}, \code{mtry} is set to \code{floor(sqrt(length(x_vars)))} by default.
+#'
+#' Warning (Exception to he latter statement) : if \code{mode_w_RF = 2},
+#' \code{mtry} is set to \code{length(x_vars)}
+#' and can not be modified
+#'
 #' @param ... Additional parameter that may be pass to the regression algorithm used
 #' (see \emph{Details - Additional parameters})
 #'
@@ -139,18 +184,52 @@
 #'
 #' }
 #'
+#' \item \emph{Random Forest modes}
+#'
+#' modes correspond to different ways to take the weights into account in the random forest :
+#' \itemize{
+#' \item \code{mode_w_RF = 1} : weights are computed a single time (on the
+#' whole train sample) before the growing of the forest and are passed
+#' to the forest as probabilities of sampling single observations for the bootstrap
+#' of the random forest. This mode corresponds to \emph{wRF1} in
+#' [Gerb. et al.], it internally calls the \code{\link[randomForestSRC]{rfsrc}}
+#' function.
+#' \item \code{mode_w_RF = 2} : weights are computed \code{ntree} times ; for a given
+#' tree, a bootsrap sample is drawn uniformly with replacement and then weights are
+#' evaluated on the bootstrap sample. The tree growing procedure use then weighted error
+#' as splitting criteria. Two types of predictions are made in this mode : the first
+#' prediction is output as \code{predicted_train/test} and it uses the same weights
+#' as those used for training to compute predictions in terminal leafs (\emph{wRF2} in
+#' [Gerb. et al.]). The second prediction is output as \code{predicted_train/test_KMloc}
+#' and it makes terminal leafs estimation by using Kaplan Meier to estimate
+#' the within leaf survival function of \eqn{T}.
+#' This mode internally calls the \code{\link[rpart]{rpart}} function.
+#' }
+#'
 #' \item \emph{Additional parameters}
 #'
-#' blabla
+#' \code{weighted_regression_survival} allows to pass additional parameters to
+#' the underlying regression algorithm. Depending on \code{type_regression}
+#' and \code{mode_w_RF}, the wrapped function is as follow :
+#' \itemize{
+#' \item \code{type_regression = "RF"} and \code{mode_w_RF = 1} : \code{\link[randomForestSRC]{rfsrc}}
+#' \item \code{type_regression = "RF"} and \code{mode_w_RF = 2} : \code{\link[rpart]{rpart}}
+#' \item \code{type_regression = "gam"} : \code{\link[mgcv]{gam}}
+#' }
+#' For instance in the first case, one may pass to \code{weighted_regression_survival}
+#' a parameter that is then passed to \code{\link[randomForestSRC]{rfsrc}}
+#' (e.g. \code{proximity = TRUE})
 #' }
 #'
 #' @return A list with the following elements :
 #'
 #' \item{predicted_train}{The vector of the predicted values for \code{phi}\eqn{(T')}
-#' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of the train set}
+#' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of the train set.
+#' See \emph{Details - Random Forest modes} for more information}
 #'
 #' \item{predicted_test}{The vector of the predicted values for
-#' \code{phi}\eqn{(T')} for the observations of the test set (require \code{data_test} != \code{NULL})}
+#' \code{phi}\eqn{(T')} for the observations of the test set (require \code{data_test} != \code{NULL}).
+#' See \emph{Details - Random Forest modes} for more information}
 #'
 #' \item{list_criteria_train}{The list with the values for the evaluation criteria computed on the train
 #' set}
@@ -158,12 +237,11 @@
 #' \item{list_criteria_test}{The list with the values for the evaluation criteria computed on the test
 #' set (require \code{data_test} != \code{NULL}))}
 #'
-#' \item{v_weights_model_train}{balbl}
-#' \item{sum_weights_train}{balbl}
-#' \item{n_weights_model_modif_train}{balbl}
+#' \item{v_weights_model_train}{The vector of the weights used to train the model,
+#' after applying \code{max_ratio_weights_model} and normalising}
 #'
-#' \item{sum_weights_test}{bla}
-#' \item{n_weights_model_modif_test}{bla}
+#' \item{n_weights_model_modif_train}{The vector giving the number of train weights modified due to
+#' \code{max_ratio_weights_model}}
 #'
 #' \item{mat_weights_train}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the train set}
@@ -171,37 +249,68 @@
 #' \item{mat_weights_test}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the test set}
 #'
-#' \item{weighted_RF_object}{The object returned by the random forest function used}
+#' \item{sum_weights_train}{The sum of the gross weights for the train data,
+#' before applying \code{max_ratio_weights_eval} and normalising}
 #'
-#' \item{weighted_gam_object}{vérifier que c'est bien ça le nom}
+#' \item{sum_weights_test}{The sum of the gross weights for the test data,
+#' before applying \code{max_ratio_weights_eval} and normalising}
+#'
+#' \item{n_weights_eval_modif_train}{The vector giving the number of train weights modified due to
+#' \code{max_ratio_weights_eval}}
+#'
+#' \item{n_weights_eval_modif_test}{The vector giving the number of test weights modified due to
+#' \code{max_ratio_weights_eval}}
+#'
+#' \item{weighted_RF_object}{The object returned by \code{\link[randomForestSRC]{rfsrc}}
+#' (when \code{type_regression = "RF"} and \code{mode_w_RF = 1})}
+#'
+#' \item{weighted_gam_object}{The object returned by \code{\link[mgcv]{gam}}
+#' (when \code{type_regression = "gam"})}
+#'
+#' \item{weighted_rpartRF_object}{The object returned by \code{\link{rfsrc}}
+#' (when \code{type_regression = "RF"} and \code{mode_w_RF = 2})}
 #'
 #' \item{max_time}{The real number giving the threshold used by the model}
 #'
 #' \item{censoring_rate_with_threshold}{The real number giving the rate of censoring
 #' of \eqn{T'}, computed on the concatenation of \code{data_train} and \code{data_test}}
 #'
+#' \item{predicted_train_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' for the observations of the train set (require \code{mode_w_RF = 2}).
+#' See \emph{Details - Random Forest modes} for more information}
 #'
-#' Seulement si on utilise le mode 2 sur la foret aleatoire :
+#' \item{predicted_test_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' for the observations of the test set (require \code{mode_w_RF = 2}).
+#' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{survival_train}{The matrix which contains the estimated values of the survival curves at
-#' \code{time_points} (with the Cox model), for the observations of the train set}
+#' \item{list_criteria_train_KMloc}{The list with the values for the evaluation criteria computed on the train
+#' set (require \code{mode_w_RF = 2}).
+#' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{survival_test}{The matrix which contains the estimated values of the survival curves at
-#' \code{time_points}, for the observations of the test set (require \code{data_test} != \code{NULL})}
+#' \item{list_criteria_test_KMloc}{The list with the values for the evaluation criteria computed on the test
+#' set (require \code{mode_w_RF = 2}).
+#' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{time_points}{The vector of the time points where the survival curves are evaluated}
+#' \item{res_surv_curv_train_KMloc}{The list which contains the estimated values of the survival
+#' curves at \code{time_points} (within leaf Kapaln Meier estimator),
+#' for the observations of the train set (require \code{mode_w_RF = 2})}
+#'
+#' \item{res_surv_curv_test_KMloc}{The list which contains the estimated values of the survival
+#' curves at \code{time_points} (within leaf Kapaln Meier estimator),
+#' for the observations of the test set
+#' (require \code{mode_w_RF = 2})}
 #'
 #' \item{data_train}{The data.frame of the train data provided as arguments, plus columns :
 #' \eqn{Y' = min(Y,} \code{max_time} \eqn{)}, \eqn{\delta' = 1_{T' \le C}}
-#' and \code{phi}\eqn{(T')} }
+#' and \code{phi}\eqn{(T')}}
 #'
 #' \item{data_test}{The data.frame of the test data provided as arguments, plus columns :
 #' \eqn{Y' = min(Y,} \code{max_time} \eqn{)}, \eqn{\delta' = 1_{T' \le C}}
 #' and \code{phi}\eqn{(T')} }
 #'
-#' \item{type_regression}{}
+#' \item{type_regression}{See \emph{Argument}}
 #'
-#' \item{type_weights}{}
+#' \item{type_weights}{See \emph{Argument}}
 #'
 #' \item{phi}{See \emph{Argument}}
 #'
@@ -209,13 +318,12 @@
 #'
 #' \item{x_vars}{See \emph{Argument}}
 #'
-#' \item{max_ratio_weights_model}{}
+#' \item{max_ratio_weights_model}{See \emph{Argument}}
 #'
 #' \item{max_ratio_weights_eval}{See \emph{Argument}}
 #'
-#' \item{mode_w_RF}{}
+#' \item{mode_w_RF}{See \emph{Argument}}
 #'
-#' voir si il n'y a pas d'autres output si j'utilise d'autres algo de regression
 #'
 #' @references [Gerb. et al.] to be published
 #'
@@ -307,7 +415,6 @@ weighted_regression_survival = function(y_var,
     sum_weights_train = apply(X = mat_weights_train, MARGIN = 2, FUN = sum)
     censoring_model_object = NULL
     if (!is.null(data_test)){
-      v_weights_model_test = mat_weights[(nrow(data_train) +1):nrow(data), type_weights]
       mat_weights_test = mat_weights[(nrow(data_train) +1):nrow(data),]
       sum_weights_test = apply(X = mat_weights_test, MARGIN = 2, FUN = sum)
     }
@@ -350,7 +457,6 @@ weighted_regression_survival = function(y_var,
                                           x_vars = x_vars,
                                           censoring_model_object = FALSE)
           mat_weights_test[,j] = res_weights_test$weights
-          v_weights_model_test = res_weights_test$weights
         }
       } else {
         res_weights_train = make_weights(data = data[data$is_train == 1, ],
@@ -396,15 +502,14 @@ weighted_regression_survival = function(y_var,
   v_weights_model_train = pmin(v_weights_model_train, min(v_weights_model_train[v_weights_model_train > 0]) * max_ratio_weights_model)
   v_weights_model_train = v_weights_model_train / sum(v_weights_model_train)
 
-  ## test
-  if (!is.null(data_test)){
-    n_weights_model_modif_test = sum(v_weights_model_test > (min(v_weights_model_test[v_weights_model_test > 0]) * max_ratio_weights_model))
-    v_weights_model_test = pmin(v_weights_model_test, min(v_weights_model_test[v_weights_model_test > 0]) * max_ratio_weights_model)
-    v_weights_model_test = v_weights_model_test / sum(v_weights_model_test)
-  }
 
   # weights_eval
   ## train
+  n_weights_eval_modif_train = apply(X = mat_weights_train, MARGIN = 2,
+                                     FUN = function(x){
+                                       x = sum(x > min(x[x > 0]) * max_ratio_weights_eval)
+                                     })
+
   mat_weights_train = apply(X = mat_weights_train, MARGIN = 2,
                             FUN = function(x){
                               x = pmin(x, min(x[x > 0]) * max_ratio_weights_eval)
@@ -412,6 +517,12 @@ weighted_regression_survival = function(y_var,
                             })
   ## test
   if (!is.null(data_test)){
+
+    n_weights_eval_modif_test = apply(X = mat_weights_test, MARGIN = 2,
+                                       FUN = function(x){
+                                         x = sum(x > min(x[x > 0]) * max_ratio_weights_eval)
+                                       })
+
     mat_weights_test = apply(X = mat_weights_test, MARGIN = 2,
                              FUN = function(x){
                                x = pmin(x, min(x[x > 0]) * max_ratio_weights_eval)
@@ -459,9 +570,11 @@ weighted_regression_survival = function(y_var,
   weighted_regression_result$mode_w_RF = mode_w_RF
   weighted_regression_result$sum_weights_train = sum_weights_train
   weighted_regression_result$n_weights_model_modif_train = n_weights_model_modif_train
+  weighted_regression_result$n_weights_eval_modif_train = n_weights_eval_modif_train
+
   if (!is.null(data_test)){
     weighted_regression_result$sum_weights_test = sum_weights_test
-    weighted_regression_result$n_weights_model_modif_test = n_weights_model_modif_test
+    weighted_regression_result$n_weights_eval_modif_test = n_weights_eval_modif_test
   }
   if (!is.null(censoring_model_object)){
     # return only the model for censoring fitted on train data

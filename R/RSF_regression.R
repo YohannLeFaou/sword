@@ -19,46 +19,70 @@
 #'
 #'
 #' @param y_var A character string which gives the name of the \eqn{Y} variable
+#'
 #' @param delta_var A character string which gives the name of the \eqn{\delta} variable (this variable
 #' should be binary : 1 = non censored, 0 = censored)
+#'
 #' @param x_vars A vector of character strings which gives the names of the explanatory variables
+#'
 #' @param data_train A data.frame of training observations. It must contain the column names \code{y_var},
 #' \code{delta_var} and \code{x_vars}
+#'
 #' @param data_test A data.frame of testing observations (default = \code{NULL})
+#'
 #' @param phi A function to be applied to \code{y_var}
+#'
 #' @param phi.args A list of additional parameters for the function \code{phi} (default = NULL).
 #' See \emph{Examples} for a use case
+#'
 #' @param max_time A real number giving a threshold for \code{y_var} (default = \code{NULL}).
 #' If \code{NULL}, then \code{max_time} is set to the maximum non censored observation
 #' of \code{y_var} among the training set. We note \eqn{T' = min(T,} \code{max_time}\eqn{)}
+#'
 #' @param RSF_object A boolean which indicates if the RSF model fitted to the training data should
 #' be returned (default = \code{TRUE})
+#'
 #' @param eval_methods A vector of character strings which gives the methods that should be
 #' used for the evaluation of the model (default = \code{c("concordance","weighted")}).
 #' Possible choices are \code{"concordance"}, \code{"weighted"} and \code{"group"}. Multiple choices are possible.
 #' See \emph{Details - Evaluation criteria} for more information
+#'
 #' @param v_bandwidth A vector of real numbers for the bandwidths to use for the model
 #' evaluation if \code{"group"} is used
 #' as an \code{eval_method} (default = \code{c(20)}). Only used if \code{"group"} is used as \code{eval_method}.
 #' See \emph{Details - Evaluation criteria} for more information
+#'
 #' @param types_weights_eval A vector of character strings which gives the types of weights to be used for IPCW
 #' (Inverse Probability of Censoring Weighting) in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
 #' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. See
 #' \emph{Details - Evaluation criteria} for more information
+#'
 #' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio
 #' for the IPC weights (default = 1000).
 #' See \emph{Details - Evaluation criteria} for more information
+#'
 #' @param mat_weights A matrix to provide handmade IPC weights for the model evaluation (default = \code{NULL}).
 #' \code{mat_weights} should satisfied \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)} and a column
 #' should correspond to a type of weights (multiple columns are possible).
 #' Column names of \code{mat_weights} may be used to specify names
 #' for the provided weights (by default names will be "w1", "w2", ...)
-#' @param ntree
-#' @param minleaf
-#' @param maxdepth
-#' @param mtry
+#'
+#' @param ntree A positive integer which gives the number of trees to grow
+#' in the forest (default = \code{100}).
+#'
+#' @param minleaf A positive integer indicating the minimum number of observations
+#' that must be present in a (terminal) leaf (default = \code{5}).
+#'
+#' @param maxdepth A positive integer indicating the maximum number of layers
+#' in individual trees (default = \code{6}).
+#'
+#' @param mtry A positive integer indicating the number of random variables
+#' to draw at each node for the split selection (default = \code{NULL}).
+#' If \code{NULL}, \code{mtry} is set to \code{floor(sqrt(length(x_vars)))} by default.
+#'
 #' @param y_non_censored_var A character string which gives the name of the non censored \code{y_var} (default = NULL).
 #' To be used only in the context of simulated data where full about is available.
+#'
 #' @param ... Additional parameter that may be pass to the \code{\link[randomForestSRC]{rfsrc}}
 #' function (package \emph{survival})
 #'
@@ -145,6 +169,12 @@
 #'
 #' \item{mat_weights_test}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the test set}
+#
+#' \item{n_weights_eval_modif_train}{The vector giving the number of train weights modified due to
+#' \code{max_ratio_weights_eval}}
+#'
+#' \item{n_weights_eval_modif_test}{The vector giving the number of test weights modified due to
+#' \code{max_ratio_weights_eval}}
 #'
 #' \item{RSF_object}{The object returned by the \code{coxph} function}
 #'
@@ -281,6 +311,12 @@ RSF_regression = function(y_var,
 
   # Thresholding of the weights_eval
   ## train
+
+  n_weights_eval_modif_train = apply(X = mat_weights_train, MARGIN = 2,
+                                     FUN = function(x){
+                                       x = sum(x > min(x[x > 0]) * max_ratio_weights_eval)
+                                     })
+
   mat_weights_train = apply(X = mat_weights_train, MARGIN = 2,
                             FUN = function(x){
                               x = pmin(x, min(x[x > 0]) * max_ratio_weights_eval)
@@ -288,6 +324,12 @@ RSF_regression = function(y_var,
                             })
   ## test
   if (!is.null(data_test)){
+
+    n_weights_eval_modif_test = apply(X = mat_weights_test, MARGIN = 2,
+                                      FUN = function(x){
+                                        x = sum(x > min(x[x > 0]) * max_ratio_weights_eval)
+                                      })
+
     mat_weights_test = apply(X = mat_weights_test, MARGIN = 2,
                              FUN = function(x){
                                x = pmin(x, min(x[x > 0]) * max_ratio_weights_eval)
@@ -377,13 +419,15 @@ RSF_regression = function(y_var,
     phi.args = phi.args,
     x_vars = x_vars,
     censoring_rate_with_threshold = sum(data$delta_prime == 0) / nrow(data),
-    max_ratio_weights_eval = max_ratio_weights_eval
+    max_ratio_weights_eval = max_ratio_weights_eval,
+    n_weights_eval_modif_train = n_weights_eval_modif_train
   )
   if (!is.null(data_test)){
     result$predicted_test = as.vector(test_predictions_direct_RSF)
     result$list_criteria_test = list_criteria_test
     result$data_test = data_test[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
     result$mat_weights_test = mat_weights_test
+    result$n_weights_eval_modif_test = n_weights_eval_modif_test
   }
   if (RSF_object){
     result$RSF_object = rfSRC
@@ -396,6 +440,30 @@ RSF_regression = function(y_var,
   }
   return(result)
 }
+
+
+#' @title Compute the prediction of a model built with \code{\link{RSF_regression}}
+#'
+#' @description Given a model built wtih \code{\link{RSF_regression}},
+#' \code{predict_RSF_regression} allows to get the predictions of the model for new
+#' observations
+#'
+#' @param object A list output by \code{\link{RSF_regression}}
+#' @param newdata A data.frame which contains the same variables as the ones
+#' used for the training
+#' @return A list with the following elements :
+#' \item{predicted}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
+#' \item{survival}{The matrix which contains the estimated values of the survival curves at
+#' \code{time_points}, for the observations of \code{newdata}}
+#' \item{time_points}{The vector of the time points where the survival curves
+#' are evaluated}
+#'
+#' @seealso \code{\link{RSF_regression}}
+#'
+#' @examples
+#'
+#'
 
 predict_RSF_regression = function(object, newdata){
   if (is.null(object$RSF_object)) stop("to use predict_RSF_regression on a RSF_regression object,

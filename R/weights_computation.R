@@ -82,7 +82,7 @@ make_weights = function(data,
   # list_result$censoring_model_object will return "NULL" by default
 
   if (type == "unif"){
-    weights = data[,delta_name]
+    weights = data[,delta_name] / sum(data[,delta_name])
   }
 
   if (type == "KM"){
@@ -142,11 +142,12 @@ make_weights = function(data,
   }
   sum_weights = sum(weights)
   n_weights_modif = sum(weights > (min(weights[weights > 0]) *  max_ratio_weights))
-  weights = pmin(weights, (min(weights[weights > 0]) *  max_ratio_weights) )
+  weights_modif = pmin(weights, (min(weights[weights > 0]) *  max_ratio_weights) )
 
-  list_result$weights = weights / sum(weights)
+  list_result$weights = weights
   list_result$sum_weights = sum_weights
   list_result$n_weights_modif = n_weights_modif
+  list_result$weights_modif
 
   return(list_result)
 }

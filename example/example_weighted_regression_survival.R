@@ -202,3 +202,39 @@ res6 = weighted_regression_survival(y_var = "futime",
                                     types_weights_eval = c("KM", "Cox", "RSF", "unif"))
 print(res6$list_criteria_test) # slight improvment compared with weights KM
 
+
+
+# ------------------------------------------------------------------------------------
+#
+#                             predict_weighted_regression_survival
+#
+# ------------------------------------------------------------------------------------
+
+# ------------------------------------------------
+#   Load "transplant" data
+# ------------------------------------------------
+data("transplant", package = "survival")
+transplant$delta = 1 * (transplant$event == "ltx") # create binary var
+# which indicate censoring/non censoring
+
+# keep only rows with no missing value
+transplant_bis = transplant[stats::complete.cases(transplant),]
+
+# ------------------------------------------------
+#   Basic call to train a model
+# ------------------------------------------------
+
+set.seed(17)
+train_lines = sample(1:nrow(transplant_bis), 600)
+res = weighted_regression_survival(y_var = "futime",
+                                    delta_var = "delta",
+                                    x_vars = setdiff(colnames(transplant_bis),
+                                                     c("futime", "delta", "event")),
+                                    data_train = transplant_bis[train_lines,],
+                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+# ------------------------------------------------
+#   Predict on new data
+# ------------------------------------------------
+
+pred = predict_weighted_regression_survival(object = res,
+                                            newdata = transplant_bis[-train_lines,])

@@ -65,6 +65,19 @@ for the provided weights (by default names will be "w1", "w2", ...)}
 \item{y_non_censored_var}{A character string which gives the name of the non censored \code{y_var} (default = NULL).
 To be used only in the context of simulated data where full about is available.}
 
+\item{ntree}{A positive integer which gives the number of trees to grow
+in the forest (default = \code{100}).}
+
+\item{minleaf}{A positive integer indicating the minimum number of observations
+that must be present in a (terminal) leaf (default = \code{5}).}
+
+\item{maxdepth}{A positive integer indicating the maximum number of layers
+in individual trees (default = \code{6}).}
+
+\item{mtry}{A positive integer indicating the number of random variables
+to draw at each node for the split selection (default = \code{NULL}).
+If \code{NULL}, \code{mtry} is set to \code{floor(sqrt(length(x_vars)))} by default.}
+
 \item{...}{Additional parameter that may be pass to the \code{\link[randomForestSRC]{rfsrc}}
 function (package \emph{survival})}
 }
@@ -89,6 +102,11 @@ set (require \code{data_test} != \code{NULL}))}
 
 \item{mat_weights_test}{The matrix which contains the values of the weights used for the
 \code{"weighted"} criteria, for the observations of the test set}
+\item{n_weights_eval_modif_train}{The vector giving the number of train weights modified due to
+\code{max_ratio_weights_eval}}
+
+\item{n_weights_eval_modif_test}{The vector giving the number of test weights modified due to
+\code{max_ratio_weights_eval}}
 
 \item{RSF_object}{The object returned by the \code{coxph} function}
 

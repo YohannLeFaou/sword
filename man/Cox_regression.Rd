@@ -90,6 +90,12 @@ set (require \code{data_test} != \code{NULL}))}
 \item{mat_weights_test}{The matrix which contains the values of the weights used for the
 \code{"weighted"} criteria, for the observations of the test set}
 
+\item{n_weights_eval_modif_train}{The vector giving the number of train weights modified due to
+\code{max_ratio_weights_eval}}
+
+\item{n_weights_eval_modif_test}{The vector giving the number of test weights modified due to
+\code{max_ratio_weights_eval}}
+
 \item{cox_object}{The object returned by the \code{coxph} function}
 
 \item{max_time}{The real number giving the threshold used by the model}
