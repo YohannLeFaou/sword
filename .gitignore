@@ -7,3 +7,4 @@ to_do_list
 sword.Rproj
 .DS_Store
 .to_do_list.swp
+*.swp
