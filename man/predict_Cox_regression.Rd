@@ -27,20 +27,33 @@ Given a model built wtih \code{\link{Cox_regression}},
 observations
 }
 \examples{
+data("transplant", package = "survival")
+transplant$delta = 1 * (transplant$event == "ltx") # create binary var
+# which indicate censoring/non censoring
 
-data(veteran, package = "randomForestSRC")
+# keep only rows with no missing value
+transplant_bis = transplant[stats::complete.cases(transplant),]
+
+
+# ------------------------------------------------
+#   Basic call to train a model
+# ------------------------------------------------
+
 set.seed(17)
-train_lines = sample(1:nrow(veteran), 120)
-res1 = Cox_regression(y_var = "time",
-                      delta_var = "status",
-                      x_vars = setdiff(colnames(veteran),c("time","status")),
-                      data_train = veteran[train_lines,],
+train_lines = sample(1:nrow(transplant_bis), 600)
+res1 = Cox_regression(y_var = "futime",
+                      delta_var = "delta",
+                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+                      data_train = transplant_bis[train_lines,],
                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
 
-pred1 = predict_Cox_regression(object = res1, newdata = veteran[-train_lines,])
-print(pred1$predicted)
+# ------------------------------------------------
+#   Predict on new data
+# ------------------------------------------------
 
-
+pred1 = predict_Cox_regression(object = res1,
+                               newdata = transplant_bis[-train_lines,])
+print(pred1$predicted[1:30])
 }
 \seealso{
 \code{\link{Cox_regression}}

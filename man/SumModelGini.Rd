@@ -6,6 +6,9 @@
 \usage{
 SumModelGini(solutions, predictions, weights)
 }
+\arguments{
+\item{weights}{}
+}
 \description{
 function called by \code{\link{NormalizedGini}}
 }

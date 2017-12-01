@@ -1,37 +1,4 @@
 
-#' @title Compute the prediction of a model built with \code{\link{Cox_regression}}
-#'
-#' @description Given an output from \code{\link{Cox_regression}},
-#' \code{predict_Cox_regression} allows to get its predictions for new
-#' observations
-#'
-#' @param object A list output by \code{\link{Cox_regression}}
-#' @param newdata A data.frame which contains the same variables as the ones
-#' used for the training
-#' @return A list with the following elements :
-#' \item{predicted}{The vector of the predicted values for \code{phi}\eqn{(T')}
-#' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
-#' \item{survival}{The matrix which contains the estimated values of the survival curves at
-#' \code{time_points}, for the observations of \code{newdata}}
-#' \item{time_points}{The vector of the time points where the survival curves
-#' are evaluated}
-#'
-#' @seealso \code{\link{Cox_regression}}
-#'
-#' @examples
-#'
-#' data(veteran, package = "randomForestSRC")
-#' set.seed(17)
-#' train_lines = sample(1:nrow(veteran), 120)
-#' res1 = Cox_regression(y_var = "time",
-#'                       delta_var = "status",
-#'                       x_vars = setdiff(colnames(veteran),c("time","status")),
-#'                       data_train = veteran[train_lines,],
-#'                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#'
-#' pred1 = predict_Cox_regression(object = res1, newdata = veteran[-train_lines,])
-#' print(pred1$predicted)
-
 
 eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
                                     max_time,  method, phi, phi.args,
@@ -96,8 +63,11 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
 #'
 #' @description function called by \code{\link{NormalizedGini}}
 #'
+#' @param solutions
+#' @param predictions
+#' @param weights
+#'
 #' @seealso \code{\link{NormalizedGini}}
-
 
 SumModelGini <- function(solutions, predictions, weights){
   ## function called by NormalizedGini
@@ -139,7 +109,23 @@ SumModelGini <- function(solutions, predictions, weights){
 #'
 #' @examples
 #'
-
+#' set.seed(17)
+#' x = runif(1000)
+#' y = rnorm(mean = x, sd = 1, n = 1000)
+#'
+#' NormalizedGini(solutions = x,
+#'                predictions = y)
+#'
+#' NormalizedGini(solutions = x,
+#'                predictions = y,
+#'                weights = x)
+#'
+#' # be carefull with the weight argument
+#' NormalizedGini(solutions = x,
+#'                predictions = y,
+#'                weights = abs(y))
+#' # when the weights depends on \code{predictions}, \code{NormalizedGini}
+#' # may gives strange results
 
 NormalizedGini <- function(solutions, predictions, weights = NULL) {
   # function which computes the Gini index of performance of a model
@@ -168,6 +154,13 @@ NormalizedGini <- function(solutions, predictions, weights = NULL) {
 #'
 #' @examples
 #'
+#' set.seed(17)
+#' x = runif(1000)
+#' y = rnorm(mean = x, sd = 0.2, n = 1000)
+#'
+#' eval_weighted_criteria(predictions = y,
+#'                        solutions = x)
+
 
 eval_weighted_criteria = function(predictions, solutions, weights = NULL){
   if(!is.null(weights)){weights = weights / sum(weights)}

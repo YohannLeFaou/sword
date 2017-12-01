@@ -33,6 +33,23 @@ depends on \code{predictions}
 }
 \examples{
 
+set.seed(17)
+x = runif(1000)
+y = rnorm(mean = x, sd = 1, n = 1000)
+
+NormalizedGini(solutions = x,
+               predictions = y)
+
+NormalizedGini(solutions = x,
+               predictions = y,
+               weights = x)
+
+# be carefull with the weight argument
+NormalizedGini(solutions = x,
+               predictions = y,
+               weights = abs(y))
+# when the weights depends on \\code{predictions}, \\code{NormalizedGini}
+# may gives strange results
 }
 \seealso{
 \code{\link{SumModelGini}}

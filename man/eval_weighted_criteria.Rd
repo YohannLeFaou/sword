@@ -24,6 +24,12 @@ the percentage of explained variance (R2) statistics.
 }
 \examples{
 
+set.seed(17)
+x = runif(1000)
+y = rnorm(mean = x, sd = 0.2, n = 1000)
+
+eval_weighted_criteria(predictions = y,
+                       solutions = x)
 }
 \seealso{
 \code{\link{SumModelGini}}

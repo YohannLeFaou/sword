@@ -28,7 +28,33 @@ observations
 }
 \examples{
 
+data("transplant", package = "survival")
+transplant$delta = 1 * (transplant$event == "ltx") # create binary var
+# which indicate censoring/non censoring
 
+# keep only rows with no missing value
+transplant_bis = transplant[stats::complete.cases(transplant),]
+
+
+# ------------------------------------------------
+#   Basic call to train a model
+# ------------------------------------------------
+
+set.seed(17)
+train_lines = sample(1:nrow(transplant_bis), 600)
+res1 = RSF_regression(y_var = "futime",
+                      delta_var = "delta",
+                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+                      data_train = transplant_bis[train_lines,],
+                      types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+
+# ------------------------------------------------
+#   Predict on new data
+# ------------------------------------------------
+
+pred1 = predict_RSF_regression(object = res1,
+                       newdata = transplant_bis[-train_lines,])
+print(pred1$predicted[1:30])
 }
 \seealso{
 \code{\link{RSF_regression}}
