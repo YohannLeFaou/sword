@@ -7,7 +7,11 @@
 SumModelGini(solutions, predictions, weights)
 }
 \arguments{
-\item{weights}{}
+\item{solutions}{nada}
+
+\item{predictions}{nada}
+
+\item{weights}{nada}
 }
 \description{
 function called by \code{\link{NormalizedGini}}

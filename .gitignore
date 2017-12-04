@@ -8,3 +8,4 @@ sword.Rproj
 .DS_Store
 .to_do_list.swp
 *.swp
+R/documentation_sup

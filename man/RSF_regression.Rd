@@ -315,8 +315,10 @@ res4 = RSF_regression(y_var = "futime",
                       data_test = transplant_bis[-train_lines,],
                       max_time = 600,
                       types_weights_eval = c("KM", "Cox", "RSF"),
-                      minleaf = 5 # change \\code{nodesize} for the inner call to \\code{\\link[randomForestSRC]{rfsrc}}
-                      )
+                      minleaf = 5)
+
+# \\code{minleaf} changes \\code{nodesize} for the inner call to
+# \\code{\\link[randomForestSRC]{rfsrc}}
 
 print(res4$list_criteria_test) # slight amelioration compared
 

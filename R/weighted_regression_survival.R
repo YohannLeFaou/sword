@@ -338,6 +338,7 @@
 #' \code{\link{predict_weighted_regression_survival}}
 #'
 #' @export
+#' @import methods survival
 #'
 #' @examples
 #'

@@ -63,9 +63,9 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
 #'
 #' @description function called by \code{\link{NormalizedGini}}
 #'
-#' @param solutions
-#' @param predictions
-#' @param weights
+#' @param solutions nada
+#' @param predictions nada
+#' @param weights nada
 #'
 #' @seealso \code{\link{NormalizedGini}}
 
@@ -107,6 +107,8 @@ SumModelGini <- function(solutions, predictions, weights){
 #'
 #' @seealso \code{\link{SumModelGini}}
 #'
+#' @export
+#'
 #' @examples
 #'
 #' set.seed(17)
@@ -136,30 +138,6 @@ NormalizedGini <- function(solutions, predictions, weights = NULL) {
   SumModelGini(solutions, predictions, weights) / SumModelGini(solutions, solutions, weights)
 }
 
-
-#' @title Compute weighted quadratic errors statistics
-#'
-#' @description Given a vector of observed values \code{solutions} and a vector
-#' of predicted values \code{predictions}, compute the Mean Squared Error (MSE) and
-#' the percentage of explained variance (R2) statistics.
-#'
-#' @param solutions A vector of observed values
-#' @param predictions A vector of predicted values
-#' @param weights A vector of weights for the single observations (défault = \code{NULL}).
-#' If \code{NULL}, then weights are taken as equal to 1
-#'
-#' @return The vector with the value of the MSE (index 1) and the R2 statistics
-#'
-#' @seealso \code{\link{SumModelGini}}
-#'
-#' @examples
-#'
-#' set.seed(17)
-#' x = runif(1000)
-#' y = rnorm(mean = x, sd = 0.2, n = 1000)
-#'
-#' eval_weighted_criteria(predictions = y,
-#'                        solutions = x)
 
 
 eval_weighted_criteria = function(predictions, solutions, weights = NULL){

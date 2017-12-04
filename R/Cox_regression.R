@@ -180,41 +180,42 @@
 #' @seealso \code{\link[survival]{coxph}}, \code{\link{predict_Cox_regression}}, \url{http://rstudio.com}
 #' (only here for the example)
 #'
+#' @export
 #'
 #' @examples
-#' 
+#'
 #' # ------------------------------------------------
 #' #   Load "transplant" data
 #' # ------------------------------------------------
 #' data("transplant", package = "survival")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
-#' 
+#'
 #' # keep only rows with no missing value
 #' apply(transplant, MARGIN = 2, FUN = function(x){sum(is.na(x))})
 #' transplant_bis = transplant[stats::complete.cases(transplant),]
-#' 
+#'
 #' # plot the survival curve of transplant data
 #' KM_transplant = survfit(formula = survival::Surv(time = futime, event = delta) ~ 1,
 #'                                   data = transplant_bis)
 #' plot(KM_transplant)
-#' 
+#'
 #' # ------------------------------------------------
 #' #   Basic call to train a model
 #' # ------------------------------------------------
-#' 
+#'
 #' res1 = Cox_regression(y_var = "futime",
 #'                       delta_var = "delta",
 #'                       x_vars = setdiff(colnames(transplant_bis),
 #'                                        c("futime", "delta", "event")),
 #'                       data_train = transplant_bis,
 #'                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' 
+#'
 #' matplot(y = t(res1$survival_train[1:30,]), x = res1$time_points, type = "l")
 #' print(res1$list_criteria_train)
 #' print(res1$max_time) # by default \code{max_time} is set to 2055 which is too large
 #' # to have good predictions (training R2 with different weights are negative !)
-#' 
+#'
 #' # ------------------------------------------------
 #' #   Training with estimation of test error
 #' # ------------------------------------------------
@@ -226,18 +227,18 @@
 #'                       data_train = transplant_bis[train_lines,],
 #'                       data_test = transplant_bis[-train_lines,],
 #'                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' 
+#'
 #' print(res2$max_time) # default \code{max_time} has changed since train set
 #' # is different
-#' 
+#'
 #' # train error is now positive but test error is still negative
 #' print(res2$list_criteria_train)
 #' print(res2$list_criteria_test)
-#' 
+#'
 #' # visualise the predictions
 #' print(res2$predicted_test[1:30])
 #' matplot(y = t(res2$survival_test[1:30,]), x = res2$time_points, type = "l")
-#' 
+#'
 #' # ------------------------------------------------
 #' #   Modify the \code{max_time} argument
 #' # ------------------------------------------------
@@ -250,12 +251,12 @@
 #'                       data_test = transplant_bis[-train_lines,],
 #'                       max_time = 600,
 #'                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' 
+#'
 #' print(res3$list_criteria_train)
 #' print(res3$list_criteria_test) # test error is much better
 #' print(res3$predicted_test[1:30])
 #' matplot(y = t(res3$survival_test[1:30,]), x = res3$time_points, type = "l")
-#' 
+#'
 #' # analyse the weights used for "weighted" criteria
 #' print(res3$censoring_rate_with_threshold) # rate of censoring taking into account \code{max_time}
 #' print(head(res3$mat_weights_test))
@@ -264,13 +265,13 @@
 #'             MARGIN = 2,
 #'             FUN = function(x){max(x[x != 0])/min(x[x != 0])}))
 #' # ratios are low because the censoring rate is low
-#' 
+#'
 #' # in this case, it is not meaningful to to modify the
 #' # \code{max_ratio_weights_eval} argument since the maximum ratios
 #' # between weights are around 2 and the test data has 197 rows.
 #' # But in other situation it may be pertinent
-#' 
-#' 
+#'
+#'
 #' # ------------------------------------------------
 #' #   Use custom \code{phi} function
 #' # ------------------------------------------------
@@ -286,10 +287,10 @@
 #'                       phi.args = list(a = 200), # set value for "a"
 #'                       max_time = 600,
 #'                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' 
+#'
 #' print(res4$list_criteria_test)
 #' print(res4$predicted_test[1:30])
- 
+
 
 Cox_regression = function(y_var,
                           delta_var,
@@ -542,19 +543,21 @@ Cox_regression = function(y_var,
 #'
 #' @seealso \code{\link{Cox_regression}}
 #'
+#' @export
+#'
 #' @examples
 #' data("transplant", package = "survival")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
-#' 
+#'
 #' # keep only rows with no missing value
 #' transplant_bis = transplant[stats::complete.cases(transplant),]
-#' 
-#' 
+#'
+#'
 #' # ------------------------------------------------
 #' #   Basic call to train a model
 #' # ------------------------------------------------
-#' 
+#'
 #' set.seed(17)
 #' train_lines = sample(1:nrow(transplant_bis), 600)
 #' res1 = Cox_regression(y_var = "futime",
@@ -562,11 +565,11 @@ Cox_regression = function(y_var,
 #'                       x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
 #'                       data_train = transplant_bis[train_lines,],
 #'                       types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' 
+#'
 #' # ------------------------------------------------
 #' #   Predict on new data
 #' # ------------------------------------------------
-#' 
+#'
 #' pred1 = predict_Cox_regression(object = res1,
 #'                                newdata = transplant_bis[-train_lines,])
 #' print(pred1$predicted[1:30])
