@@ -187,14 +187,17 @@ See \emph{Details - Random Forest modes} for more information}
 set (require \code{mode_w_RF = 2}).
 See \emph{Details - Random Forest modes} for more information}
 
-\item{res_surv_curv_train_KMloc}{The list which contains the estimated values of the survival
+\item{survival_train_KMloc}{The matrix which contains the estimated values of the survival
 curves at \code{time_points} (within leaf Kapaln Meier estimator),
 for the observations of the train set (require \code{mode_w_RF = 2})}
 
-\item{res_surv_curv_test_KMloc}{The list which contains the estimated values of the survival
+\item{survival_test_KMloc}{The matrix which contains the estimated values of the survival
 curves at \code{time_points} (within leaf Kapaln Meier estimator),
 for the observations of the test set
 (require \code{mode_w_RF = 2})}
+
+\item{time_points}{The vector of the time points where the survival curves
+are evaluated (require \code{mode_w_RF = 2})}
 
 \item{data_train}{The data.frame of the train data provided as arguments, plus columns :
 \eqn{Y' = min(Y,} \code{max_time} \eqn{)}, \eqn{\delta' = 1_{T' \le C}}

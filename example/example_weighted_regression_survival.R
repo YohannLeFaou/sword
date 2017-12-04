@@ -231,10 +231,12 @@ res = weighted_regression_survival(y_var = "futime",
                                     x_vars = setdiff(colnames(transplant_bis),
                                                      c("futime", "delta", "event")),
                                     data_train = transplant_bis[train_lines,],
-                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"),
+                                    mode_w_RF = 2)
 # ------------------------------------------------
 #   Predict on new data
 # ------------------------------------------------
 
 pred = predict_weighted_regression_survival(object = res,
                                             newdata = transplant_bis[-train_lines,])
+

@@ -294,14 +294,17 @@
 #' set (require \code{mode_w_RF = 2}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{res_surv_curv_train_KMloc}{The list which contains the estimated values of the survival
+#' \item{survival_train_KMloc}{The matrix which contains the estimated values of the survival
 #' curves at \code{time_points} (within leaf Kapaln Meier estimator),
 #' for the observations of the train set (require \code{mode_w_RF = 2})}
 #'
-#' \item{res_surv_curv_test_KMloc}{The list which contains the estimated values of the survival
+#' \item{survival_test_KMloc}{The matrix which contains the estimated values of the survival
 #' curves at \code{time_points} (within leaf Kapaln Meier estimator),
 #' for the observations of the test set
 #' (require \code{mode_w_RF = 2})}
+#'
+#' \item{time_points}{The vector of the time points where the survival curves
+#' are evaluated (require \code{mode_w_RF = 2})}
 #'
 #' \item{data_train}{The data.frame of the train data provided as arguments, plus columns :
 #' \eqn{Y' = min(Y,} \code{max_time} \eqn{)}, \eqn{\delta' = 1_{T' \le C}}
@@ -334,6 +337,7 @@
 #' \code{\link[mgcv]{gam}},
 #' \code{\link{predict_weighted_regression_survival}}
 #'
+#' @export
 #'
 #' @examples
 #'
@@ -784,6 +788,71 @@ weighted_regression_survival = function(y_var,
 }
 
 
+
+#' @title Compute the prediction of a model built with \code{\link{weighted_regression_survival}}
+#'
+#' @description Given a model built wtih \code{\link{weighted_regression_survival}},
+#' \code{predict_weighted_regression_survival} allows to get the
+#' predictions of the model for new
+#' observations
+#'
+#' @param object A list output by \code{\link{weighted_regression_survival}}
+#' @param newdata A data.frame which contains the same variables as the ones
+#' used for the training
+#' @return A list with the following elements :
+#' \item{predicted}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
+#' \item{predicted_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' for the observations of newdata with inner Kapaln Meier weights
+#' (require \code{object} to be trained with
+#' \code{mode_w_rf = 2}).
+#' See \code{\link{weighted_regression_survival}} for more information}
+#' \item{survival_KMloc}{The matrix which contains the estimated values of the survival curves at
+#' \code{time_points} with inner Kapaln Meier weights,
+#' for the observations of \code{newdata} (require \code{mode_w_RF = 2})}
+#' \item{time_points}{The vector of the time points where the survival curves
+#' are evaluated (require \code{mode_w_RF = 2})}
+#'
+#'
+#' @seealso \code{\link{weighted_regression_survival}}
+#'
+#' @export
+#'
+#' @examples
+#'
+#' # ------------------------------------------------
+#' #   Load "transplant" data
+#' # ------------------------------------------------
+#' data("transplant", package = "survival")
+#' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
+#' # which indicate censoring/non censoring
+#'
+#' # keep only rows with no missing value
+#' transplant_bis = transplant[stats::complete.cases(transplant),]
+#'
+#' # ------------------------------------------------
+#' #   Basic call to train a model
+#' # ------------------------------------------------
+#'
+#' set.seed(17)
+#' train_lines = sample(1:nrow(transplant_bis), 600)
+#' res = weighted_regression_survival(y_var = "futime",
+#'                                    delta_var = "delta",
+#'                                    x_vars = setdiff(colnames(transplant_bis),
+#'                                                     c("futime", "delta", "event")),
+#'                                    data_train = transplant_bis[train_lines,],
+#'                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"),
+#'                                    mode_w_RF = 2)
+#'
+#' # ------------------------------------------------
+#' #   Predict on new data
+#' # ------------------------------------------------
+#'
+#' pred = predict_weighted_regression_survival(object = res,
+#'                                             newdata = transplant_bis[-train_lines,])
+
+
+
 predict_weighted_regression_survival = function(object, newdata){
   if (is.null(object$weighted_RF_object) &
       is.null(object$weighted_gam_object) &
@@ -801,14 +870,18 @@ predict_weighted_regression_survival = function(object, newdata){
     return(list(predicted = as.vector(predictions)))
   }
   if (!is.null(object$weighted_rpartRF_object)){
-    predictions = predict_rpartRF(object = object$weighted_rpartRF_object,
+    res_predictions = predict_rpartRF(object = object$weighted_rpartRF_object,
                                   newdata = newdata[,object$x_vars],
-                                  type = "response")
-    predictions_surv = predict_rpartRF(object = object$weighted_rpartRF_object,
+                                  type = "normal")
+
+    res_predictions_KMloc = predict_rpartRF(object = object$weighted_rpartRF_object,
                                        newdata = newdata[,object$x_vars],
-                                       type = "surv")
-    return(list(predicted = predictions,
-                predicted_surv = predictions_surv))
+                                       type = "KMloc")
+
+    return(list(predicted = res_predictions$predicted,
+                predicted_KMloc = res_predictions_KMloc$predicted_KMloc,
+                survival_KMloc = res_predictions_KMloc$preds_surv_KMloc,
+                time_points = res_predictions_KMloc$time))
   }
 }
 
@@ -863,30 +936,25 @@ make_res_weighted_regression = function(y_var,
                             delta_var = delta_var,
                             x_vars = x_vars,
                             type_weights = type_weights,
+                            phi = phi,
+                            phi.args = phi.args,
+                            max_time = max_time,
                             max_ratio_weights_model = max_ratio_weights_model,
                             ntree = ntree,
                             minleaf = minleaf,
                             maxdepth = maxdepth,
                             ...)
 
+
       overfitted_predictions = predict_rpartRF(object = rpartRF_fit,
                                                newdata = data_train[,x_vars],
-                                               type = "response")
+                                               type = "normal")$predicted
 
-
-      res_overfitted_surv_curv_KMloc = predict_rpartRF(object = rpartRF_fit,
+      res_overfitted_predictions_KMloc = predict_rpartRF(object = rpartRF_fit,
                                                        newdata = data_train[,x_vars],
-                                                       type = "surv")
+                                                       type = "KMloc")
 
-
-      overfitted_predictions_KMloc =
-        (res_overfitted_surv_curv_KMloc$surv[, which(res_overfitted_surv_curv_KMloc$time < max_time)] -
-           cbind(res_overfitted_surv_curv_KMloc$surv[, which(res_overfitted_surv_curv_KMloc$time < max_time)[-1] ], 0)) %*%
-        sapply(X = 1:length(c(res_overfitted_surv_curv_KMloc$time[which(res_overfitted_surv_curv_KMloc$time < max_time)[-1]], max_time)),
-               FUN = function(i){do.call(phi,
-                                         c(list(x=c(res_overfitted_surv_curv_KMloc$time[which(res_overfitted_surv_curv_KMloc$time < max_time)[-1]],
-                                                    max_time)[i]),
-                                           phi.args))})
+      overfitted_predictions_KMloc = res_overfitted_predictions_KMloc$predicted_KMloc
 
     }
   }
@@ -942,20 +1010,15 @@ make_res_weighted_regression = function(y_var,
 
         test_predictions = predict_rpartRF(object = rpartRF_fit,
                                            newdata = data_test[,x_vars],
-                                           type = "response")
+                                           type = "normal")$predicted
 
-        res_test_surv_curv_KMloc = predict_rpartRF(object = rpartRF_fit,
+
+        res_test_predictions_KMloc = predict_rpartRF(object = rpartRF_fit,
                                                    newdata = data_test[,x_vars],
-                                                   type = "surv")
+                                                   type = "KMloc")
 
-        test_predictions_KMloc =
-          (res_test_surv_curv_KMloc$surv[, which(res_test_surv_curv_KMloc$time < max_time)] -
-             cbind(res_test_surv_curv_KMloc$surv[, which(res_test_surv_curv_KMloc$time < max_time)[-1] ], 0)) %*%
-          sapply(X = 1:length(c(res_test_surv_curv_KMloc$time[which(res_test_surv_curv_KMloc$time < max_time)[-1]], max_time)),
-                 FUN = function(i){do.call(phi,
-                                           c(list(x=c(res_test_surv_curv_KMloc$time[which(res_test_surv_curv_KMloc$time < max_time)[-1]],
-                                                      max_time)[i]),
-                                             phi.args))})
+        test_predictions_KMloc = res_test_predictions_KMloc$predicted_KMloc
+
       }
     }
     if (type_regression == "gam"){
@@ -1021,7 +1084,8 @@ make_res_weighted_regression = function(y_var,
   }
   if ((type_regression == "RF") & (mode_w_RF == 2)){
     result$list_criteria_train_KMloc = list_criteria_train_KMloc
-    result$res_surv_curv_train_KMloc = res_overfitted_surv_curv_KMloc
+    result$time_points = res_overfitted_predictions_KMloc$time
+    result$survival_train_KMloc = res_overfitted_predictions_KMloc$preds_surv_KMloc
     result$predicted_train_KMloc = overfitted_predictions_KMloc
   }
   if (!is.null(data_test)){
@@ -1031,7 +1095,7 @@ make_res_weighted_regression = function(y_var,
     result$mat_weights_test = mat_weights_test
     if ((type_regression == "RF") & (mode_w_RF == 2)){
       result$list_criteria_test_KMloc = list_criteria_test_KMloc
-      result$res_surv_curv_test_KMloc = res_test_surv_curv_KMloc
+      result$survival_test_KMloc = res_test_predictions_KMloc$preds_surv_KMloc
       result$predicted_test_KMloc = test_predictions_KMloc
     }
   }
@@ -1062,6 +1126,9 @@ rpartRF = function(data,
                    delta_var,
                    x_vars,
                    type_weights,
+                   phi,
+                   phi.args,
+                   max_time,
                    max_ratio_weights_model,
                    ntree, # peut-etre a enlever plus tard
                    minleaf,
@@ -1069,7 +1136,11 @@ rpartRF = function(data,
                    ...){
   list_models = list()
   for (i in 1:ntree){
-    cat(paste0(i," "))
+    if (i == 1){cat(paste0("tree",1,".. "))}
+    if (i == 2){cat(paste0("tree",2,".. "))}
+    if (i == 5){cat(paste0("tree",5,".. "))}
+    if ((i %% 10) == 0){cat(paste0("tree",i,".. "))}
+
     sample_train = sample(x = 1:nrow(data), size = nrow(data), replace = T)
     d_train = data[sample_train, ]
 
@@ -1111,16 +1182,23 @@ rpartRF = function(data,
                             nelson_allen_estimates = nelson_allen_estimates,
                             time = seq(from = 0, to = max(data[,"y_prime"]) * 1.05, length.out = 100))
   }
-  return(list_models)
+  return(list(list_models = list_models,
+              phi = phi,
+              phi.args = phi.args,
+              max_time = max_time
+              )
+  )
 }
 
 predict_rpartRF = function(object, newdata, type){
-  if (type == "response"){
-    preds = do.call(what = cbind, args = lapply(X = object, FUN = function(x){rpart:::predict.rpart(object = x$model, newdata = newdata)}))
-    return(rowMeans(preds))
+  if (type == "normal"){
+    preds = do.call(what = cbind, args = lapply(X = object$list_models,
+                                                FUN = function(x){rpart:::predict.rpart(object = x$model, newdata = newdata)}))
+    return(list(predicted = as.vector(rowMeans(preds))))
   }
-  if (type == "surv"){
-    preds_node = do.call(what = cbind, args = lapply(X = object, FUN = function(x){predict_nodes(object = x$model, newdata = newdata)}))
+  if (type == "KMloc"){
+    preds_node = do.call(what = cbind, args = lapply(X = object$list_models,
+                                                     FUN = function(x){predict_nodes(object = x$model, newdata = newdata)}))
     ntree = ncol(preds_node)
 
     #not as fast as the next solution but no bug here
@@ -1129,8 +1207,8 @@ predict_rpartRF = function(object, newdata, type){
             args = lapply(X = 1:dim(preds_node)[1], FUN = function(j){ # t(preds_node)
               mat_nelson_allen = do.call(what = rbind,
                       args = lapply(X = 1:ntree, FUN = function(i){
-                        object[[i]]$nelson_allen_estimates[object[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
-                                                           2:ncol(object[[i]]$nelson_allen_estimates)]
+                        object$list_models[[i]]$nelson_allen_estimates[object$list_models[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
+                                                           2:ncol(object$list_models[[i]]$nelson_allen_estimates)]
                       }))
               colMeans(mat_nelson_allen)
     }))
@@ -1139,18 +1217,35 @@ predict_rpartRF = function(object, newdata, type){
     # t1 = Sys.time()
     # mean_nelson_allen_estimates = do.call(what = rbind,
     #                                       args = lapply(X = 1:dim(preds_node)[1], FUN = function(j){
-    #                                         nelson_allen = rep(0, dim(object[[1]]$nelson_allen_estimates)[2] - 1)
+    #                                         nelson_allen = rep(0, dim(object$list_models[[1]]$nelson_allen_estimates)[2] - 1)
     #                                         for (i in 1:ntree){
     #                                           nelson_allen =
     #                                             nelson_allen +
-    #                                             object[[i]]$nelson_allen_estimates[object[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
-    #                                                                                2:ncol(object[[i]]$nelson_allen_estimates)]
+    #                                             object$list_models[[i]]$nelson_allen_estimates[object$list_models[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
+    #                                                                                2:ncol(object$list_models[[i]]$nelson_allen_estimates)]
     #                                         }
     #                                         return(nelson_allen / ntree)
     #                                       }))
     # Sys.time() - t1
 
-    return(list(time = object[[1]]$time, surv = exp(-mean_nelson_allen_estimates)))
+    preds_surv_KMloc = exp(-mean_nelson_allen_estimates)
+
+    predicted_KMloc =
+      (preds_surv_KMloc[, which(object$list_models[[1]]$time < object$max_time)] -
+         cbind(preds_surv_KMloc[, which(object$list_models[[1]]$time < object$max_time)[-1] ], 0)) %*%
+      sapply(X = 1:length(c(object$list_models[[1]]$time[which(object$list_models[[1]]$time < object$max_time)[-1]], object$max_time)),
+             FUN = function(i){do.call(object$phi,
+                                       c(list(x=c(object$list_models[[1]]$time[which(object$list_models[[1]]$time < object$max_time)[-1]],
+                                                  object$max_time)[i]),
+                                         object$phi.args))})
+
+
+    return(list(time = object$list_models[[1]]$time,
+                preds_surv_KMloc = exp(-mean_nelson_allen_estimates),
+                predicted_KMloc = as.vector(predicted_KMloc)))
   }
 }
+
+
+
 
