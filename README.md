@@ -22,4 +22,4 @@ devtools::install_github("YohannLeFaou/sword")
 
 # Documentation
 
-The [vignette of the sword package](inst/doc/sword_vignette.html) explains the principle of the method and illustrates through an example how the package can be used.
+The [vignette of the sword package](https://cdn.rawgit.com/YohannLeFaou/sword/34d395ff/inst/doc/sword_vignette.html) explains the principle of the method and illustrates through an example how the package can be used.
