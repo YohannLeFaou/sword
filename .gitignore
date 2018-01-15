@@ -9,6 +9,6 @@ sword.Rproj
 .to_do_list.swp
 *.swp
 R/documentation_sup
-inst/doc
+#inst/doc
 to_do_list_vignette
 .to_do_list_vignette.swp
