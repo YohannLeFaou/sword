@@ -116,9 +116,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>Once we have built an estimator <span class="math inline">\(\hat{S}_C(\cdot |X = x)\)</span> of <span class="math inline">\(S_C(\cdot |X = x)\)</span>, we can compute the IPC weights <span class="math inline">\(\hat{w}_i = \delta_i ~/~ \hat{S}_C(y_i |X = x_i)\)</span>.</p>
 <p>Then the method consists in using the regression algorithm to predict the targets <span class="math inline">\(\phi(y_i)\)</span>, with explanatory variables <span class="math inline">\(x_i\)</span>, and with each observation <span class="math inline">\(i\)</span> getting a weight <span class="math inline">\(\hat{w}_i\)</span> in the model training.</p>
 <p>Depending on the algorithm, there might be different ways to take the weights into account. For instance, if we consider a linear gaussian model (with parameter <span class="math inline">\(\beta\)</span>) as regression algorithm, the weights <span class="math inline">\(\hat{w}_i\)</span> are introduced in the quadratic error of the model and <span class="math inline">\(\hat{\beta}\)</span> is estimated with :</p>
-<span class="math display">\[\begin{align*}
+<p><span class="math display">\[
 \hat{\beta} = \underset{\beta \in R^d}{\text{argmin}} \sum_{i=1}^n \hat{w}_i \cdot (\phi(y_i) - \beta \cdot x_i)
-\end{align*}\]</span>
+\]</span></p>
 </div>
 </div>
 </div>
@@ -431,9 +431,9 @@ test =<span class="st"> </span>transplant_bis[-train_lines,] <span class="co"># 
 <div id="comparison-with-benchmark-models" class="section level2">
 <h2>Comparison with benchmark models</h2>
 <p>The two benchmark models we use are derived from 2 classical algorithms to study survival data : the Cox model and the random survival forest algorithm. In both cases, the survival model is used to build a model to estimate the conditionnal survival functions <span class="math inline">\(S_T(\cdot,X = x)\)</span> : let <span class="math inline">\(\hat{S} _T(\cdot,X = x)\)</span> the estimates. Then, the prediction for <span class="math inline">\(E[\phi(T)|X=x]\)</span> is estimated with the formula</p>
-<span class="math display">\[\begin{align*}
-\hat{\phi} = - \int_{s=0}^{\text{max_time}} \phi(s) d\hat{S}_T(\cdot,X = x)
-\end{align*}\]</span>
+<p><span class="math display">\[
+\hat{\phi} = - \int_{s=0}^{\text{max\_time}} \phi(s) d\hat{S}_T(\cdot,X = x)
+\]</span></p>
 <div id="random-survival-forest" class="section level3">
 <h3>Random Survival Forest</h3>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res2 =<span class="st"> </span><span class="kw">RSF_regression</span>(<span class="dt">y_var =</span> <span class="st">&quot;futime&quot;</span>,
