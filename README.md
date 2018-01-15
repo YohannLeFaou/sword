@@ -653,3 +653,6 @@ print(R2)
 # Conclusion
 
 In this document, we have presented the package `sword` which aims to provide an implementation of the weighted regression algorihtm for survival data, that we have studied in the article [??]. To illustrate the fonctionalities of the package, we have explored the `transplant` data and we have applied the methods provided in `sword` to answer the problem of the estimation of the probabilty that a patient remain in the waiting list for liver transplant one year after entering the list.
+
+
+[vignette de sword](inst/doc/sword_vignette.pdf)
