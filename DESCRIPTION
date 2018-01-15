@@ -8,16 +8,17 @@ Authors@R: person("Yohann", "Le Faou",
 Description:
     sword is a package which implements the methology developed in (citer article).
     The main function of sword is weighted_regression_survival and allows to fit
-    random forest and gam model to model a right censored variable, using IPCW.
+    random forest and gam model to model a right censored variable, using
+    Inverse Probability of Censoring Weighting (IPCW).
     Different types of weights are available (Kaplan-Meier, Cox, random survival forest)
     and custom weights may be provided. Cox_regression and RSF_regression are functions
     which implement the 2 benchmarks based on Cox model and RSF model studied 
     in (citer article). These 3 sword functions are wrappers to other R packages
     which implement classical regression algorithms.
-License: What license is it under?
+License: no
 Encoding: UTF-8
 LazyData: true
-Imports: 
+Imports:
     randomForestSRC (>= 2.4.2),
     mgcv (>= 1.8-17),
     rpart (>= 4.1-11),
@@ -25,3 +26,6 @@ Imports:
 Depends:
     R (>= 3.4), methods, survival (>= 2.41-3), graphics (>= 3.4)
 RoxygenNote: 6.0.1
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr

@@ -37,10 +37,11 @@
 #' @param data_test A data.frame of testing observations (default = \code{NULL})
 #'
 #' @param type_regression A character string giving the regression algorithm to use
-#' in the model (default = \code{"RF"})
+#' in the model (default = \code{"RF"}). Other possible value is "gam".
 #'
-#' @param type_weights A character string giving the type of type of IPC weights used to
-#' trian the random forest (default = \code{"KM"})
+#' @param type_weights A character string giving the type of IPC weights used to
+#' train the regression model (default = \code{"KM"}). Other possible values are "Cox", "RSF"
+#' and "unif".
 #'
 #' @param phi A function to be applied to \code{y_var}
 #'
@@ -867,7 +868,7 @@ predict_weighted_regression_survival = function(object, newdata){
     return(list(predicted = as.vector(predictions)))
   }
   if (!is.null(object$weighted_gam_object)){
-    predictions = mgcv::predict.gam(object$weighted_gam_object, newdata[,object$x_vars])
+    predictions = mgcv::predict.gam(object$weighted_gam_object, newdata[,object$x_vars], type = "response")
     return(list(predicted = as.vector(predictions)))
   }
   if (!is.null(object$weighted_rpartRF_object)){
@@ -967,7 +968,8 @@ make_res_weighted_regression = function(y_var,
                         ...)
 
     overfitted_predictions = mgcv::predict.gam(gam_fit ,
-                                               data_train[,x_vars])
+                                               data_train[,x_vars],
+                                               type = "response")
   }
 
   # Eval on train
@@ -1024,7 +1026,8 @@ make_res_weighted_regression = function(y_var,
     }
     if (type_regression == "gam"){
       test_predictions = mgcv::predict.gam(gam_fit,
-                                           data_test[,x_vars])
+                                           data_test[,x_vars],
+                                           type = "response")
     }
 
     # Eval on test
