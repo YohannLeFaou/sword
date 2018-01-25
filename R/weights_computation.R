@@ -1,10 +1,10 @@
 
 
-make_weights_from_survival_curves = function(vect_y, vect_delta, mat_survival_curves_C, time_points){
+make_weights_from_surv_curves = function(vect_y, vect_delta, mat_surv_curves_C, time_points){
   # function which computes weights of the observations given values of y, delta and estimates
   ## of S_C(.|X)
 
-  x = cbind(vect_y, mat_survival_curves_C)
+  x = cbind(vect_y, mat_surv_curves_C)
   x = x[(vect_delta == 1),]
   non_zero_w = 1 / length(vect_delta) /
     apply(X = x,
@@ -34,7 +34,7 @@ make_KM_weights = function(vect_y, vect_delta, vect_c = NULL){
     # S_C is estimated by Kaplan Meier estimator
     delta_c = 1 - vect_delta
     data_c = data.frame(y = vect_y, delta_c = delta_c)
-    km_c = survival::survfit(survival::Surv(time = y, event = delta_c) ~ 1,
+    km_c = surv::survfit(surv::Surv(time = y, event = delta_c) ~ 1,
                              data = data_c,
                              type = "kaplan-meier")
   } else{
@@ -42,7 +42,7 @@ make_KM_weights = function(vect_y, vect_delta, vect_c = NULL){
     delta_c = rep(1, length(vect_y))
     data_c = data.frame(y = vect_c,
                         delta_c = delta_c)
-    km_c = survival::survfit(survival::Surv(time = y , event = delta_c) ~ 1,
+    km_c = surv::survfit(surv::Surv(time = y , event = delta_c) ~ 1,
                              data = data_c,
                              type = "kaplan-meier")
   }
@@ -68,7 +68,7 @@ make_weights = function(data,
                         type = c("KM", "Cox", "RSF", "unif"),
                         max_ratio_weights,
                         x_vars = NULL,
-                        censoring_model_object = TRUE){
+                        cens_mod_obj = TRUE){
 
   type = match.arg(as.character(type), c("KM", "Cox", "RSF", "unif"))
   if (is.null(y_name2)) y_name2 = y_name
@@ -78,8 +78,8 @@ make_weights = function(data,
   weight_max = max_ratio_weights / nrow(data)
   list_result = list()
 
-  # rmk : no need to fill list_result$censoring_model_object if "censoring_model_object = TRUE" :
-  # list_result$censoring_model_object will return "NULL" by default
+  # rmk : no need to fill list_result$cens_mod_obj if "cens_mod_obj = TRUE" :
+  # list_result$cens_mod_obj will return "NULL" by default
 
   if (type == "unif"){
     weights = data[,delta_name] / sum(data[,delta_name])
@@ -92,8 +92,8 @@ make_weights = function(data,
       res_KM_weights = make_KM_weights(vect_y = data[,y_name],
                                     vect_delta = data[,delta_name])
       weights = res_KM_weights$weights
-      if (censoring_model_object){
-        list_result$censoring_model_object = res_KM_weights$censoring_survfit
+      if (cens_mod_obj){
+        list_result$cens_mod_obj = res_KM_weights$censoring_survfit
       }
     }
   }
@@ -101,11 +101,11 @@ make_weights = function(data,
   if (type == "Cox"){
     # possible to make a functions "make_cox_weights", "make_RSF_weights"
     formula = stats::as.formula(paste0("Surv(",y_name2,", deltaC ) ~ ."))
-    cox_fit = survival::coxph(formula = formula,
+    cox_fit = surv::coxph(formula = formula,
                               data = data[,c(y_name2, "deltaC", x_vars)]
     )
 
-    baseline_cox = survival::basehaz(cox_fit)
+    baseline_cox = surv::basehaz(cox_fit)
     ref_surv = data.frame(time = c(0, baseline_cox$time),
                           surv = c(1, exp(-baseline_cox$hazard)))
 
@@ -116,7 +116,7 @@ make_weights = function(data,
                     method = "linear",
                     rule = 2)$y)^(exp(cox_fit$linear.predictors)) , 1/(max_ratio_weights * 1.5) )
     weights[data[,delta_name] == 0] = 0
-    if(censoring_model_object){list_result$censoring_model_object = cox_fit}
+    if(cens_mod_obj){list_result$cens_mod_obj = cox_fit}
   }
 
   if (type == "RSF"){
@@ -134,18 +134,18 @@ make_weights = function(data,
                                      splitrule = "logrank",
                                      ntime = ntime)
 
-    weights = make_weights_from_survival_curves(vect_y = data[, y_name],
+    weights = make_weights_from_surv_curves(vect_y = data[, y_name],
                                                 vect_delta = data[, delta_name],
-                                                mat_survival_curves_C = cbind(1, RSF_fit$survival.oob),
+                                                mat_surv_curves_C = cbind(1, RSF_fit$surv.oob),
                                                 time_points = c(0, RSF_fit$time.interest))
-    if(censoring_model_object){list_result$censoring_model_object = RSF_fit}
+    if(cens_mod_obj){list_result$cens_mod_obj = RSF_fit}
   }
-  sum_weights = sum(weights)
+  sum_w = sum(weights)
   n_weights_modif = sum(weights > (min(weights[weights > 0]) *  max_ratio_weights))
   weights_modif = pmin(weights, (min(weights[weights > 0]) *  max_ratio_weights) )
 
   list_result$weights = weights
-  list_result$sum_weights = sum_weights
+  list_result$sum_w = sum_w
   list_result$n_weights_modif = n_weights_modif
   list_result$weights_modif
 

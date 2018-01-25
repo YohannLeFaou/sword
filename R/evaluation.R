@@ -5,7 +5,7 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
                                     bandwidth = NULL){
   # this function computes the aggregated criteria for assessing performances of a model
   # parameters :
-  ## model_predictions (vector) : predicted values of the model
+  ## model_predictions (vector) : pred values of the model
   ## data : dataset with corresponding observations
   ## delta_name : name of the "delta" variable in the dataset "data"
   ## y_name : name of the "y" variable in the datasent "data"
@@ -31,7 +31,7 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
       if (sum(data[data$group == i,delta_name]) > 0){ # if it exists non censored observations in the group
 
         # empirical phi inside the group (KM estimate)
-        a = survival::survfit(formula = formula,
+        a = surv::survfit(formula = formula,
                               data = data[data$group == i,])
         phi_by_group[i] = - sum( diff(c(1,a$surv[which(a$time < max_time)],0)) *
                                    sapply(X = 1:length(c(a$time[which(a$time < max_time)], max_time)),
@@ -86,12 +86,12 @@ SumModelGini <- function(solutions, predictions, weights){
 #' @title Compute a Gini goodness of fit statistic
 #'
 #' @description Given a vector of observed values \code{solutions} and a vector
-#' of predicted values \code{predictions}, the Gini index
-#' measures how well the order of the predicted values corresponds
+#' of pred values \code{predictions}, the Gini index
+#' measures how well the order of the pred values corresponds
 #' to the order of the observed values.
 #'
 #' @param solutions A vector of observed values
-#' @param predictions A vector of predicted values
+#' @param predictions A vector of pred values
 #' @param weights A vector of weights for the single observations (défault = \code{NULL}).
 #' If \code{NULL}, then weights are taken as equal to 1
 #'
@@ -132,7 +132,7 @@ SumModelGini <- function(solutions, predictions, weights){
 NormalizedGini <- function(solutions, predictions, weights = NULL) {
   # function which computes the Gini index of performance of a model
   # solutions : vector of true values
-  # predictions : vector of predicted values
+  # predictions : vector of pred values
 
   if(is.null(weights)){weights = rep(1, length(solutions))}
   SumModelGini(solutions, predictions, weights) / SumModelGini(solutions, solutions, weights)
@@ -159,31 +159,31 @@ eval_model = function(predictions,
                       y_name,
                       delta_name,
                       max_time,
-                      eval_methods,
+                      ev_methods,
                       phi = phi,
                       phi.args,
-                      mat_weights = NULL,
+                      mat_w = NULL,
                       phi_non_censored_name = NULL,
-                      v_bandwidth){ # pour le no_w je peux mettre un vecteur avec 0 et 1 dans no_w
+                      bandwidths){ # pour le no_w je peux mettre un vecteur avec 0 et 1 dans no_w
 
   # rmq : à priori on pourrait se passer d'avoir "data" dans les arguments
   # (et se contenter de phi, y(_prime), delta(_prime))
   # mais je laisse au cas où
 
-  list_criteria = list()
+  perf = list()
 
-  if("concordance" %in% eval_methods){
+  if("concordance" %in% ev_methods){
     formula = stats::as.formula(paste0("Surv(", phi_name, ",", delta_name, ") ~ predictions"))
     concordance =
-      1 - survival::survConcordance(formula = formula,
+      1 - surv::survConcordance(formula = formula,
                                     data = cbind(data[,c(phi_name, delta_name)],
                                                  predictions)
       )$concordance
-    list_criteria$concordance = concordance
+    perf$concordance = concordance
   }
 
-  if ("group" %in% eval_methods){
-    criteria_group = as.vector(sapply(X = v_bandwidth,
+  if ("group" %in% ev_methods){
+    criteria_group = as.vector(sapply(X = bandwidths,
                                       FUN = eval_aggregated_criteria,
                                       model_predictions = predictions,
                                       data = data[,c("y_prime","delta_prime")],
@@ -194,20 +194,20 @@ eval_model = function(predictions,
                                       phi = phi,
                                       phi.args = phi.args
     ))
-    names(criteria_group) = c(do.call(c, lapply( X = v_bandwidth, FUN = function(x){paste0(c("Gini_","Kendall_","R2_"), x)})))
-    list_criteria$criteria_group = criteria_group
+    names(criteria_group) = c(do.call(c, lapply( X = bandwidths, FUN = function(x){paste0(c("Gini_","Kendall_","R2_"), x)})))
+    perf$criteria_group = criteria_group
   }
 
-  if ("weighted" %in% eval_methods){
-    criteria_weighted = as.vector(apply(X = mat_weights,
+  if ("weighted" %in% ev_methods){
+    criteria_weighted = as.vector(apply(X = mat_w,
                                         MARGIN = 2,
                                         FUN = eval_weighted_criteria,
                                         predictions = predictions,
                                         solutions = data[,phi_name]))
 
-    names(criteria_weighted) = as.vector(sapply(X = colnames(mat_weights),
+    names(criteria_weighted) = as.vector(sapply(X = colnames(mat_w),
                                                 FUN = function(x){paste0(x, c("_mse", "_R2"))}))
-    list_criteria$criteria_weighted = criteria_weighted
+    perf$criteria_weighted = criteria_weighted
   }
 
   if (!is.null(phi_non_censored_name)){
@@ -227,9 +227,9 @@ eval_model = function(predictions,
 
     criteria_non_censored = c(Gini, Kendall, R2, mse)
     names(criteria_non_censored) = c("Gini", "Kendall", "R2", "mse")
-    list_criteria$criteria_non_censored = criteria_non_censored
+    perf$criteria_non_censored = criteria_non_censored
   }
-  return(list_criteria)
+  return(perf)
 }
 
 

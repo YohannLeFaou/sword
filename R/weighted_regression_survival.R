@@ -1,20 +1,20 @@
 
 #' @title Fit classical regression model (GAM, RF) on right censored data using IPCW
 #'
-#' @description \code{weighted_regression_survival} is the core function of the package.
+#' @description \code{sw_reg} is the core function of the package.
 #' It implements the method we study in [Gerb. et al.] to adapt regression
 #' algorithms to right censored target variable. Given a right
 #' censored variable \eqn{T}, a
-#' function \code{phi} and covariates \eqn{X}, \code{weighted_regression_survival}
+#' function \code{phi} and covariates \eqn{X}, \code{sw_reg}
 #' aims to estimate \eqn{E[}\code{phi}\eqn{(T)|X]}. The methods is based on the
 #' IPCW (Inverse probability of Censoring Weighting) principle for right
 #' censored variables which is used to compensate for the censoring. Though the method
-#' may generalise to many regression algorithms, \code{weighted_regression_survival}
+#' may generalise to many regression algorithms, \code{sw_reg}
 #' only implements random forest and GAM solutions.
-#' Technicaly, \code{weighted_regression_survival} is a wrapper for
+#' Technicaly, \code{sw_reg} is a wrapper for
 #' \code{\link[randomForestSRC]{rfsrc}} and \code{\link[rpart]{rpart}}(random
 #' forest) and \code{\link[mgcv]{gam}} (GAM). Different methods are available
-#' to assess the quality of fit of \code{RSF_regression}.\cr \cr
+#' to assess the quality of fit of \code{rsf_reg}.\cr \cr
 #' The notations we use are :
 #' \itemize{
 #' \item \eqn{C} : Censoring variable
@@ -31,15 +31,15 @@
 #'
 #' @param x_vars A vector of character strings which gives the names of the explanatory variables
 #'
-#' @param data_train A data.frame of training observations. It must contain the column names \code{y_var},
+#' @param train A data.frame of training observations. It must contain the column names \code{y_var},
 #' \code{delta_var} and \code{x_vars}
 #'
-#' @param data_test A data.frame of testing observations (default = \code{NULL})
+#' @param test A data.frame of testing observations (default = \code{NULL})
 #'
-#' @param type_regression A character string giving the regression algorithm to use
+#' @param type_reg A character string giving the regression algorithm to use
 #' in the model (default = \code{"RF"}). Other possible value is "gam".
 #'
-#' @param type_weights A character string giving the type of IPC weights used to
+#' @param type_w A character string giving the type of IPC weights used to
 #' train the regression model (default = \code{"KM"}). Other possible values are "Cox", "RSF"
 #' and "unif".
 #'
@@ -52,59 +52,60 @@
 #' If \code{NULL}, then \code{max_time} is set to the maximum non censored observation
 #' of \code{y_var} among the training set. We note \eqn{T' = min(T,} \code{max_time}\eqn{)}
 #'
-#' @param weighted_regression_object A boolean which indicates if the random forest
+#' @param sw_reg_obj A boolean which indicates if the random forest
 #' model fitted to the training data should
 #' be returned (default = \code{TRUE})
 #'
-#' @param censoring_model_object A boolean which indicates if the
+#' @param cens_mod_obj A boolean which indicates if the
 #' model fitted to the censoring variable to compute the weights
 #' ("KM", "Cox" or "RSF") used for training should
 #' be returned (default = \code{TRUE})
 #'
-#' @param eval_methods A vector of character strings which gives the methods that should be
+#' @param ev_methods A vector of character strings which gives the methods that should be
 #' used for the evaluation of the model (default = \code{c("concordance","weighted")}).
 #' Possible choices are \code{"concordance"}, \code{"weighted"}
 #' and \code{"group"}. Multiple choices are possible.
 #' See \emph{Details - Evaluation criteria} for more information
 #'
-#' @param v_bandwidth A vector of real numbers for the bandwidths to use for the model
+#' @param bandwidths A vector of real numbers for the bandwidths to use for the model
 #' evaluation if \code{"group"} is used
-#' as an \code{eval_method} (default = \code{c(20)}). Only used if
-#' \code{"group"} is used as \code{eval_method}.
+#' as an \code{ev_methods} (default = \code{NULL} : set to 50 if \code{"group"} in \code{ev_methods}).
+#' Only used if \code{"group"} is used as \code{ev_methods}.
 #' See \emph{Details - Evaluation criteria} for more information
 #'
-#' @param types_weights_eval A vector of character strings which gives the
+#' @param types_w_ev A vector of character strings which gives the
 #' types of weights to be used for IPCW
 #' (Inverse Probability of Censoring Weighting) in the model evaluation
 #' (default = \code{c("KM")} (Kaplan Meier)).
 #' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. See
 #' \emph{Details - Evaluation criteria} for more information
 #'
-#' @param max_ratio_weights_model A real number which gives the maximum admissible ratio
-#' for the IPC weights (default = 1000) used in model fitting.
+#' @param max_w_mod A real number which gives the maximum admissible ratio
+#' for the IPC weights (default = NULL : then set to \code{floor(sqrt(nrow(train))/2)})
+#' used in model fitting.
 #' See \emph{Details - Evaluation criteria} for more information
 #'
-#' @param max_ratio_weights_eval A real number which gives the maximum admissible ratio
+#' @param max_w_ev A real number which gives the maximum admissible ratio
 #' for the IPC weights (default = 1000) used in model evaluation.
 #' See \emph{Details - Evaluation criteria} for more information
 #'
-#' @param mat_weights A matrix to provide handmade IPC weights for the model
+#' @param mat_w A matrix to provide handmade IPC weights for the model
 #' evaluation (default = \code{NULL}).
-#' \code{mat_weights} should satisfied
-#' \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)}
+#' \code{mat_w} should satisfied
+#' \code{nrow(mat_w) = nrow(train) + nrow(test)}
 #' and a column should correspond to a type of weights
 #' (multiple columns are possible).
-#' Column names of \code{mat_weights} may be used to specify names
+#' Column names of \code{mat_w} may be used to specify names
 #' for the provided weights (by default names will be "w1", "w2", ...)
 #'
-#' @param y_non_censored_var A character string which gives the name of the
+#' @param y_no_cens_var A character string which gives the name of the
 #' non censored \code{y_var} (default = \code{NULL}).
 #' To be used only in the context of simulated data where full about is available
 #'
-#' @param mode_w_RF An integer (\code{1} or \code{2}) which specifiy the type of weighted
+#' @param mode_sw_RF An integer (\code{1} or \code{2}) which specifiy the type of weighted
 #' random forest to grow : \code{1} = wRF1, \code{2} = wRF2 or wRF3 (default = \code{1}).
 #' See \emph{Details - Random Forest modes} for more information.
-#' Only used if \code{type_regression = "RF"}
+#' Only used if \code{type_reg = "RF"}
 #'
 #' @param ntree A positive integer which gives the number of trees to grow
 #' in the forest (default = \code{100}).
@@ -119,7 +120,7 @@
 #' to draw at each node for the split selection (default = \code{NULL}).
 #' If \code{NULL}, \code{mtry} is set to \code{floor(sqrt(length(x_vars)))} by default.
 #'
-#' Warning (Exception to he latter statement) : if \code{mode_w_RF = 2},
+#' Warning (Exception to he latter statement) : if \code{mode_sw_RF = 2},
 #' \code{mtry} is set to \code{length(x_vars)}
 #' and can not be modified
 #'
@@ -141,37 +142,37 @@
 #' \eqn{\sum_i W_i  (y_i - \hat{y}_i)^2} where \eqn{(y_i)i} are the censored targets of the model, \eqn{(W_i)i}
 #' are the IPC weights, and \eqn{(\hat{y}_i)i} are the predictions made.
 #'
-#' The \code{types_weights_eval} argument allows the use of four kinds of IPC weights :
+#' The \code{types_w_ev} argument allows the use of four kinds of IPC weights :
 #' \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. The first three types of weights correspond
-#' to different ways to estimate the survival function of the censoring. On the other hand, \code{"unif"}
+#' to different ways to estimate the surv function of the censoring. On the other hand, \code{"unif"}
 #' corresponds to \eqn{W_i = 1} for all i.
 #'
-#' Since the IPC weights may take too large values in some situation, \code{max_ratio_weights_eval} allows
+#' Since the IPC weights may take too large values in some situation, \code{max_w_ev} allows
 #' to threshold the weights \eqn{(W_i)i} so that the ratio between the largest and the smallest weights doesn't
-#' exceed \code{max_ratio_weights_eval}. If \eqn{W_max} is the maximum weight, considered weights are then
+#' exceed \code{max_w_ev}. If \eqn{W_max} is the maximum weight, considered weights are then
 #' \eqn{min(W_i, W_max) / ( \sum_i min(W_i, W_max) ) }
 #'
-#' You can also manually provide weights to be used for IPCW with the argument \code{mat_weights} (those
-#' weights will also be threshold w.r.t. \code{max_ration_weights_eval}). \code{mat_weights} should be a
-#' matrix satisfying \code{nrow(mat_weights) = nrow(data_train) + nrow(data_test)}, any numbers of
+#' You can also manually provide weights to be used for IPCW with the argument \code{mat_w} (those
+#' weights will also be threshold w.r.t. \code{max_ration_weights_eval}). \code{mat_w} should be a
+#' matrix satisfying \code{nrow(mat_w) = nrow(train) + nrow(test)}, any numbers of
 #' columns may be provided and then each column of the matrix corresponds to a type of weights.
 #' Columns name of the matrix are taken as names for the different types of weights. If there is no
 #' column name, then default names are "w1", "w2', ...
 #'
 #'
 #' \item \code{"concordance"} : The concordance is a classical measure of performance when modelling
-#' censored variables. It indicates if the order of the predicted values of the model is similar to
+#' censored variables. It indicates if the order of the pred values of the model is similar to
 #' the order of the observed values. The concordance generalizes the Kendall tau to the censored case.
 #'
 #'
 #' \item \code{"group"} : This is an experimental criteria that we didn't mention in [Gerb. et al.]. Here,
 #' the idea to take the censoring into account is to measure errors given groups of observations and
-#' not single observations. First, the test sample is ordered w.r.t. the predicted values of the
+#' not single observations. First, the test sample is ordered w.r.t. the pred values of the
 #' model. Second, respecting this order the test sample is splited into groups of size \code{v_bandwidht[1]}, or
 #' \code{v_bandwidht[2]}, etc ... (each bandwidth in \code{v_bandwidht} corresponds to a different
 #' score \code{"group"}).
 #'
-#' Then, inside a group, an estimator of the survival function of \eqn{T} may be obtained by
+#' Then, inside a group, an estimator of the surv function of \eqn{T} may be obtained by
 #' Kaplan Meier, and we can deduce an estimator of \code{phi}\eqn{(T)} by integration. This estimator
 #' of \code{phi}\eqn{(T)} may be
 #' viewed as an "empirical" value of \code{phi}\eqn{(T)} inside the group.
@@ -192,132 +193,132 @@
 #'
 #' modes correspond to different ways to take the weights into account in the random forest :
 #' \itemize{
-#' \item \code{mode_w_RF = 1} : weights are computed a single time (on the
+#' \item \code{mode_sw_RF = 1} : weights are computed a single time (on the
 #' whole train sample) before the growing of the forest and are passed
 #' to the forest as probabilities of sampling single observations for the bootstrap
 #' of the random forest. This mode corresponds to \emph{wRF1} in
 #' [Gerb. et al.], it internally calls the \code{\link[randomForestSRC]{rfsrc}}
 #' function.
-#' \item \code{mode_w_RF = 2} : weights are computed \code{ntree} times ; for a given
+#' \item \code{mode_sw_RF = 2} : weights are computed \code{ntree} times ; for a given
 #' tree, a bootsrap sample is drawn uniformly with replacement and then weights are
 #' evaluated on the bootstrap sample. The tree growing procedure use then weighted error
 #' as splitting criteria. Two types of predictions are made in this mode : the first
-#' prediction is output as \code{predicted_train/test} and it uses the same weights
+#' prediction is output as \code{pred_train/test} and it uses the same weights
 #' as those used for training to compute predictions in terminal leafs (\emph{wRF2} in
-#' [Gerb. et al.]). The second prediction is output as \code{predicted_train/test_KMloc}
+#' [Gerb. et al.]). The second prediction is output as \code{pred_train/test_KMloc}
 #' and it makes terminal leafs estimation by using Kaplan Meier to estimate
-#' the within leaf survival function of \eqn{T}.
+#' the within leaf surv function of \eqn{T}.
 #' This mode internally calls the \code{\link[rpart]{rpart}} function.
 #' }
 #'
 #' \item \emph{Additional parameters}
 #'
-#' \code{weighted_regression_survival} allows to pass additional parameters to
-#' the underlying regression algorithm. Depending on \code{type_regression}
-#' and \code{mode_w_RF}, the wrapped function is as follow :
+#' \code{sw_reg} allows to pass additional parameters to
+#' the underlying regression algorithm. Depending on \code{type_reg}
+#' and \code{mode_sw_RF}, the wrapped function is as follow :
 #' \itemize{
-#' \item \code{type_regression = "RF"} and \code{mode_w_RF = 1} : \code{\link[randomForestSRC]{rfsrc}}
-#' \item \code{type_regression = "RF"} and \code{mode_w_RF = 2} : \code{\link[rpart]{rpart}}
-#' \item \code{type_regression = "gam"} : \code{\link[mgcv]{gam}}
+#' \item \code{type_reg = "RF"} and \code{mode_sw_RF = 1} : \code{\link[randomForestSRC]{rfsrc}}
+#' \item \code{type_reg = "RF"} and \code{mode_sw_RF = 2} : \code{\link[rpart]{rpart}}
+#' \item \code{type_reg = "gam"} : \code{\link[mgcv]{gam}}
 #' }
-#' For instance in the first case, one may pass to \code{weighted_regression_survival}
+#' For instance in the first case, one may pass to \code{sw_reg}
 #' a parameter that is then passed to \code{\link[randomForestSRC]{rfsrc}}
 #' (e.g. \code{proximity = TRUE})
 #' }
 #'
 #' @return A list with the following elements :
 #'
-#' \item{predicted_train}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' \item{pred_train}{The vector of the pred values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of the train set.
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{predicted_test}{The vector of the predicted values for
-#' \code{phi}\eqn{(T')} for the observations of the test set (require \code{data_test} != \code{NULL}).
+#' \item{pred_test}{The vector of the pred values for
+#' \code{phi}\eqn{(T')} for the observations of the test set (require \code{test} != \code{NULL}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{list_criteria_train}{The list with the values for the evaluation criteria computed on the train
+#' \item{perf_train}{The list with the values for the evaluation criteria computed on the train
 #' set}
 #'
-#' \item{list_criteria_test}{The list with the values for the evaluation criteria computed on the test
-#' set (require \code{data_test} != \code{NULL}))}
+#' \item{perf_test}{The list with the values for the evaluation criteria computed on the test
+#' set (require \code{test} != \code{NULL}))}
 #'
-#' \item{v_weights_model_train}{The vector of the weights used to train the model,
-#' after applying \code{max_ratio_weights_model} and normalising}
+#' \item{w_mod_train}{The vector of the weights used to train the model,
+#' after applying \code{max_w_mod} and normalising}
 #'
-#' \item{n_weights_model_modif_train}{The vector giving the number of train weights modified due to
-#' \code{max_ratio_weights_model}}
+#' \item{n_w_mod_modif_train}{The vector giving the number of train weights modified due to
+#' \code{max_w_mod}}
 #'
-#' \item{mat_weights_train}{The matrix which contains the values of the weights used for the
+#' \item{mat_w_train}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the train set}
 #'
-#' \item{mat_weights_test}{The matrix which contains the values of the weights used for the
+#' \item{mat_w_test}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the test set}
 #'
-#' \item{sum_weights_train}{The sum of the gross weights for the train data,
-#' before applying \code{max_ratio_weights_eval} and normalising}
+#' \item{sum_w_train}{The sum of the gross weights for the train data,
+#' before applying \code{max_w_ev} and normalising}
 #'
-#' \item{sum_weights_test}{The sum of the gross weights for the test data,
-#' before applying \code{max_ratio_weights_eval} and normalising}
+#' \item{sum_w_test}{The sum of the gross weights for the test data,
+#' before applying \code{max_w_ev} and normalising}
 #'
-#' \item{n_weights_eval_modif_train}{The vector giving the number of train weights modified due to
-#' \code{max_ratio_weights_eval}}
+#' \item{n_w_ev_modif_train}{The vector giving the number of train weights modified due to
+#' \code{max_w_ev}}
 #'
-#' \item{n_weights_eval_modif_test}{The vector giving the number of test weights modified due to
-#' \code{max_ratio_weights_eval}}
+#' \item{n_w_ev_modif_test}{The vector giving the number of test weights modified due to
+#' \code{max_w_ev}}
 #'
-#' \item{weighted_RF_object}{The object returned by \code{\link[randomForestSRC]{rfsrc}}
-#' (when \code{type_regression = "RF"} and \code{mode_w_RF = 1})}
+#' \item{sw_RF_obj}{The obj returned by \code{\link[randomForestSRC]{rfsrc}}
+#' (when \code{type_reg = "RF"} and \code{mode_sw_RF = 1})}
 #'
-#' \item{weighted_gam_object}{The object returned by \code{\link[mgcv]{gam}}
-#' (when \code{type_regression = "gam"})}
+#' \item{sw_gam_obj}{The obj returned by \code{\link[mgcv]{gam}}
+#' (when \code{type_reg = "gam"})}
 #'
-#' \item{weighted_rpartRF_object}{The object returned by \code{\link{rfsrc}}
-#' (when \code{type_regression = "RF"} and \code{mode_w_RF = 2})}
+#' \item{sw_rpartRF_obj}{The obj returned by \code{\link{rfsrc}}
+#' (when \code{type_reg = "RF"} and \code{mode_sw_RF = 2})}
 #'
 #' \item{max_time}{The real number giving the threshold used by the model}
 #'
-#' \item{censoring_rate_with_threshold}{The real number giving the rate of censoring
-#' of \eqn{T'}, computed on the concatenation of \code{data_train} and \code{data_test}}
+#' \item{cens_rate}{The real number giving the rate of censoring
+#' of \eqn{T'}, computed on the concatenation of \code{train} and \code{test}}
 #'
-#' \item{predicted_train_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
-#' for the observations of the train set (require \code{mode_w_RF = 2}).
+#' \item{pred_train_KMloc}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' for the observations of the train set (require \code{mode_sw_RF = 2}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{predicted_test_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
-#' for the observations of the test set (require \code{mode_w_RF = 2}).
+#' \item{pred_test_KMloc}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' for the observations of the test set (require \code{mode_sw_RF = 2}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{list_criteria_train_KMloc}{The list with the values for the evaluation criteria computed on the train
-#' set (require \code{mode_w_RF = 2}).
+#' \item{perf_train_KMloc}{The list with the values for the evaluation criteria computed on the train
+#' set (require \code{mode_sw_RF = 2}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{list_criteria_test_KMloc}{The list with the values for the evaluation criteria computed on the test
-#' set (require \code{mode_w_RF = 2}).
+#' \item{perf_test_KMloc}{The list with the values for the evaluation criteria computed on the test
+#' set (require \code{mode_sw_RF = 2}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{survival_train_KMloc}{The matrix which contains the estimated values of the survival
+#' \item{surv_train_KMloc}{The matrix which contains the estimated values of the surv
 #' curves at \code{time_points} (within leaf Kapaln Meier estimator),
-#' for the observations of the train set (require \code{mode_w_RF = 2})}
+#' for the observations of the train set (require \code{mode_sw_RF = 2})}
 #'
-#' \item{survival_test_KMloc}{The matrix which contains the estimated values of the survival
+#' \item{surv_test_KMloc}{The matrix which contains the estimated values of the surv
 #' curves at \code{time_points} (within leaf Kapaln Meier estimator),
 #' for the observations of the test set
-#' (require \code{mode_w_RF = 2})}
+#' (require \code{mode_sw_RF = 2})}
 #'
-#' \item{time_points}{The vector of the time points where the survival curves
-#' are evaluated (require \code{mode_w_RF = 2})}
+#' \item{time_points}{The vector of the time points where the surv curves
+#' are evaluated (require \code{mode_sw_RF = 2})}
 #'
-#' \item{data_train}{The data.frame of the train data provided as arguments, plus columns :
+#' \item{train}{The data.frame of the train data provided as arguments, plus columns :
 #' \eqn{Y' = min(Y,} \code{max_time} \eqn{)}, \eqn{\delta' = 1_{T' \le C}}
 #' and \code{phi}\eqn{(T')}}
 #'
-#' \item{data_test}{The data.frame of the test data provided as arguments, plus columns :
+#' \item{test}{The data.frame of the test data provided as arguments, plus columns :
 #' \eqn{Y' = min(Y,} \code{max_time} \eqn{)}, \eqn{\delta' = 1_{T' \le C}}
 #' and \code{phi}\eqn{(T')} }
 #'
-#' \item{type_regression}{See \emph{Argument}}
+#' \item{type_reg}{See \emph{Argument}}
 #'
-#' \item{type_weights}{See \emph{Argument}}
+#' \item{type_w}{See \emph{Argument}}
 #'
 #' \item{phi}{See \emph{Argument}}
 #'
@@ -325,28 +326,28 @@
 #'
 #' \item{x_vars}{See \emph{Argument}}
 #'
-#' \item{max_ratio_weights_model}{See \emph{Argument}}
+#' \item{max_w_mod}{See \emph{Argument}}
 #'
-#' \item{max_ratio_weights_eval}{See \emph{Argument}}
+#' \item{max_w_ev}{See \emph{Argument}}
 #'
-#' \item{mode_w_RF}{See \emph{Argument}}
+#' \item{mode_sw_RF}{See \emph{Argument}}
 #'
 #'
 #' @references [Gerb. et al.] to be published
 #'
 #' @seealso \code{\link[randomForestSRC]{rfsrc}}, \code{\link[rpart]{rpart}},
 #' \code{\link[mgcv]{gam}},
-#' \code{\link{predict_weighted_regression_survival}}
+#' \code{\link{predict_sw_reg}}
 #'
 #' @export
-#' @import methods survival
+#' @import methods surv
 #'
 #' @examples
 #'
 #' # ------------------------------------------------
 #' #   Load "transplant" data
 #' # ------------------------------------------------
-#' data("transplant", package = "survival")
+#' data("transplant", package = "surv")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
 #'
@@ -354,56 +355,56 @@
 #' apply(transplant, MARGIN = 2, FUN = function(x){sum(is.na(x))})
 #' transplant_bis = transplant[stats::complete.cases(transplant),]
 #'
-#' # plot the survival curve of transplant data
-#' KM_transplant = survfit(formula = survival::Surv(time = futime, event = delta) ~ 1,
+#' # plot the surv curve of transplant data
+#' KM_transplant = survfit(formula = surv::Surv(time = futime, event = delta) ~ 1,
 #'                         data = transplant_bis)
 #' plot(KM_transplant)
 #'
 #' # ------------------------------------------------
 #' #   Basic call to train a model
 #' # ------------------------------------------------
-#' res1 = weighted_regression_survival(y_var = "futime",
+#' res1 = sw_reg(y_var = "futime",
 #'                                     delta_var = "delta",
 #'                                     x_vars = setdiff(colnames(transplant_bis),
 #'                                                      c("futime", "delta", "event")),
-#'                                     data_train = transplant_bis
+#'                                     train = transplant_bis
 #' )
 #' # parameters set by default
-#' res1$type_weights
-#' res1$type_regression
-#' res1$max_ratio_weights_model
-#' res1$max_ratio_weights_eval
-#' res1$mode_w_RF # 1 corresponds to wRF1 in [Gerb. et al.]
+#' res1$type_w
+#' res1$type_reg
+#' res1$max_w_mod
+#' res1$max_w_ev
+#' res1$mode_sw_RF # 1 corresponds to wRF1 in [Gerb. et al.]
 #'
 #'
 #' # train errors
-#' res1$list_criteria_train
+#' res1$perf_train
 #'
 #' # ------------------------------------------------
 #' #   Training with estimation of test error
 #' # ------------------------------------------------
 #' set.seed(17)
 #' train_lines = sample(1:nrow(transplant_bis), 600)
-#' res2 = weighted_regression_survival(y_var = "futime",
+#' res2 = sw_reg(y_var = "futime",
 #'                                     delta_var = "delta",
 #'                                     x_vars = setdiff(colnames(transplant_bis),
 #'                                                      c("futime", "delta", "event")),
-#'                                     data_train = transplant_bis[train_lines,],
-#'                                     data_test = transplant_bis[-train_lines,],
-#'                                     types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+#'                                     train = transplant_bis[train_lines,],
+#'                                     test = transplant_bis[-train_lines,],
+#'                                     types_w_ev = c("KM", "Cox", "RSF", "unif"))
 #'
 #' print(res2$max_time) # default \code{max_time} has changed since train set
 #' # is different
 #'
 #' # there is a uge overfitting in terms of quadratic errors
-#' print(res2$list_criteria_train)
-#' print(res2$list_criteria_test)
+#' print(res2$perf_train)
+#' print(res2$perf_test)
 #'
 #' # default parameters for the random forest are
-#' res2$weighted_RF_object$ntree
-#' res2$weighted_RF_object$mtry
-#' res2$weighted_RF_object$nodesize
-#' res2$weighted_RF_object$nodedepth # means there is no depth limit
+#' res2$sw_RF_obj$ntree
+#' res2$sw_RF_obj$mtry
+#' res2$sw_RF_obj$nodesize
+#' res2$sw_RF_obj$nodedepth # means there is no depth limit
 #'
 #'
 #' # -----------------------------------------------------
@@ -413,76 +414,76 @@
 #'
 #' set.seed(17)
 #' train_lines = sample(1:nrow(transplant_bis), 600)
-#' res30 = weighted_regression_survival(y_var = "futime",
+#' res30 = sw_reg(y_var = "futime",
 #'                                     delta_var = "delta",
 #'                                     x_vars = setdiff(colnames(transplant_bis),
 #'                                                      c("futime", "delta", "event")),
-#'                                     data_train = transplant_bis[train_lines,],
-#'                                     data_test = transplant_bis[-train_lines,],
-#'                                     type_weights = "KM", # default value
+#'                                     train = transplant_bis[train_lines,],
+#'                                     test = transplant_bis[-train_lines,],
+#'                                     type_w = "KM", # default value
 #'                                     max_time = 600, # we set \code{max_time} to 600
-#'                                     types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' print(res30$list_criteria_test)
+#'                                     types_w_ev = c("KM", "Cox", "RSF", "unif"))
+#' print(res30$perf_test)
 #'
 #' # are the other types of weights giving better results ?
 #' ## Cox weights
-#' res31 = weighted_regression_survival(y_var = "futime",
+#' res31 = sw_reg(y_var = "futime",
 #'                                     delta_var = "delta",
 #'                                     x_vars = setdiff(colnames(transplant_bis),
 #'                                                      c("futime", "delta", "event")),
-#'                                     data_train = transplant_bis[train_lines,],
-#'                                     data_test = transplant_bis[-train_lines,],
-#'                                     type_weights = "Cox",
+#'                                     train = transplant_bis[train_lines,],
+#'                                     test = transplant_bis[-train_lines,],
+#'                                     type_w = "Cox",
 #'                                     max_time = 600, # we set \code{max_time} to 600
-#'                                     types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' print(res31$list_criteria_test) # slight improvment compared with weights KM
+#'                                     types_w_ev = c("KM", "Cox", "RSF", "unif"))
+#' print(res31$perf_test) # slight improvment compared with weights KM
 #'
 #' ## RSF weights
-#' res32 = weighted_regression_survival(y_var = "futime",
+#' res32 = sw_reg(y_var = "futime",
 #'                                      delta_var = "delta",
 #'                                      x_vars = setdiff(colnames(transplant_bis),
 #'                                                       c("futime", "delta", "event")),
-#'                                      data_train = transplant_bis[train_lines,],
-#'                                      data_test = transplant_bis[-train_lines,],
-#'                                      type_weights = "RSF",
+#'                                      train = transplant_bis[train_lines,],
+#'                                      test = transplant_bis[-train_lines,],
+#'                                      type_w = "RSF",
 #'                                      max_time = 600, # we set \code{max_time} to 600
-#'                                      types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' print(res32$list_criteria_test)
+#'                                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+#' print(res32$perf_test)
 #'
 #' ## unif weights
-#' res33 = weighted_regression_survival(y_var = "futime",
+#' res33 = sw_reg(y_var = "futime",
 #'                                      delta_var = "delta",
 #'                                      x_vars = setdiff(colnames(transplant_bis),
 #'                                                       c("futime", "delta", "event")),
-#'                                      data_train = transplant_bis[train_lines,],
-#'                                      data_test = transplant_bis[-train_lines,],
-#'                                      type_weights = "unif",
+#'                                      train = transplant_bis[train_lines,],
+#'                                      test = transplant_bis[-train_lines,],
+#'                                      type_w = "unif",
 #'                                      max_time = 600, # we set \code{max_time} to 600
-#'                                      types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' print(res33$list_criteria_test)
+#'                                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+#' print(res33$perf_test)
 #'
 #' # In terms of quadratic, the best weights are the Cox weights
 #' # remark : in this example there is not a big difference between the "unif" weights
 #' # and the other weights because there is little censoring in the data :
-#' res33$censoring_rate_with_threshold
+#' res33$cens_rate
 #'
 #' # -----------------------------------------------------------------
 #' #     Try wRF2  and wRF3 (both are obtained with
-#' #               \code{mode_w_RF = 2})
+#' #               \code{mode_sw_RF = 2})
 #' # -----------------------------------------------------------------
 #'
-#' res40 = weighted_regression_survival(y_var = "futime",
+#' res40 = sw_reg(y_var = "futime",
 #'                                      delta_var = "delta",
 #'                                      x_vars = setdiff(colnames(transplant_bis),
 #'                                                       c("futime", "delta", "event")),
-#'                                      data_train = transplant_bis[train_lines,],
-#'                                      data_test = transplant_bis[-train_lines,],
-#'                                      type_weights = "Cox",
+#'                                      train = transplant_bis[train_lines,],
+#'                                      test = transplant_bis[-train_lines,],
+#'                                      type_w = "Cox",
 #'                                      max_time = 600, # we set \code{max_time} to 600
-#'                                      types_weights_eval = c("KM", "Cox", "RSF", "unif"),
-#'                                      mode_w_RF = 2)
-#' print(res40$list_criteria_test) # wRF2 : not as good as wRF1
-#' print(res40$list_criteria_test_KMloc) # wRF3 : worse than wRF2
+#'                                      types_w_ev = c("KM", "Cox", "RSF", "unif"),
+#'                                      mode_sw_RF = 2)
+#' print(res40$perf_test) # wRF2 : not as good as wRF1
+#' print(res40$perf_test_KMloc) # wRF3 : worse than wRF2
 #'
 #'
 #' # -------------------------------------------------------
@@ -490,33 +491,33 @@
 #' # -------------------------------------------------------
 #'
 #' ## GLM with Cox weights
-#' res5 = weighted_regression_survival(y_var = "futime",
+#' res5 = sw_reg(y_var = "futime",
 #'                                      delta_var = "delta",
 #'                                      x_vars = setdiff(colnames(transplant_bis),
 #'                                                       c("futime", "delta", "event")),
-#'                                      data_train = transplant_bis[train_lines,],
-#'                                      data_test = transplant_bis[-train_lines,],
-#'                                      type_weights = "Cox",
+#'                                      train = transplant_bis[train_lines,],
+#'                                      test = transplant_bis[-train_lines,],
+#'                                      type_w = "Cox",
 #'                                      max_time = 600, # we set \code{max_time} to 600
-#'                                      types_weights_eval = c("KM", "Cox", "RSF", "unif"),
-#'                                     type_regression = "gam")
-#' print(res5$list_criteria_test) # not as good as random forest
+#'                                      types_w_ev = c("KM", "Cox", "RSF", "unif"),
+#'                                     type_reg = "gam")
+#' print(res5$perf_test) # not as good as random forest
 #'
 #'
 #' # ------------------------------------------------------------
 #' #     Analyse the weights used for "weighted" criteria
 #' # ------------------------------------------------------------
 #'
-#' print(res31$censoring_rate_with_threshold) # rate of censoring taking into account \code{max_time}
-#' print(head(res31$mat_weights_test))
+#' print(res31$cens_rate) # rate of censoring taking into account \code{max_time}
+#' print(head(res31$mat_w_test))
 #' ## ratio max(weights)/min(weights)
-#' print(apply(X = res31$mat_weights_test,
+#' print(apply(X = res31$mat_w_test,
 #'             MARGIN = 2,
 #'             FUN = function(x){max(x[x != 0])/min(x[x != 0])}))
 #' # ratios are low because the censoring rate is low
 #'
 #' # in this case, it is not meaningful to to modify the
-#' # \code{max_ratio_weights_eval} argument since the maximum ratios
+#' # \code{max_w_ev} argument since the maximum ratios
 #' # between weights are around 2 and the test data has 197 rows.
 #' # But in other situation it may be pertinent
 #'
@@ -527,41 +528,41 @@
 #' g = function(x,a) abs(x-a)
 #' set.seed(17)
 #' train_lines = sample(1:nrow(transplant_bis), 600)
-#' res6 = weighted_regression_survival(y_var = "futime",
+#' res6 = sw_reg(y_var = "futime",
 #'                                     delta_var = "delta",
 #'                                     x_vars = setdiff(colnames(transplant_bis),
 #'                                                      c("futime", "delta", "event")),
-#'                                     data_train = transplant_bis[train_lines,],
-#'                                     data_test = transplant_bis[-train_lines,],
+#'                                     train = transplant_bis[train_lines,],
+#'                                     test = transplant_bis[-train_lines,],
 #'                                     phi = g,
 #'                                     phi.args = list(a = 200),
-#'                                     type_weights = "Cox",
+#'                                     type_w = "Cox",
 #'                                     max_time = 600, # we set \code{max_time} to 600
-#'                                     types_weights_eval = c("KM", "Cox", "RSF", "unif"))
-#' print(res6$list_criteria_test) # slight improvment compared with weights KM
+#'                                     types_w_ev = c("KM", "Cox", "RSF", "unif"))
+#' print(res6$perf_test) # slight improvment compared with weights KM
 
-weighted_regression_survival = function(y_var,
+sw_reg = function(y_var,
                                         delta_var,
                                         x_vars,
-                                        data_train,
-                                        data_test = NULL,
-                                        type_regression = "RF",
-                                        type_weights = "KM",
+                                        train,
+                                        test = NULL,
+                                        type_reg = "RF",
+                                        type_w = "KM",
                                         phi = function(x){x},
                                         phi.args = list(),
                                         max_time = NULL,
-                                        weighted_regression_object = T,
-                                        censoring_model_object = T,
-                                        eval_methods = c("concordance","weighted"),
-                                        v_bandwidth = 20,
-                                        types_weights_eval = "KM",
-                                        max_ratio_weights_model = 20,
-                                        max_ratio_weights_eval = 1000,
-                                        mat_weights = NULL, # we say that when mat_weights is not NULL, and type_weights is NULL, the column 1 of mat_weights is employed for fitting
-                                        y_non_censored_var = NULL,
+                                        sw_reg_obj = T,
+                                        cens_mod_obj = T,
+                                        ev_methods = c("concordance","weighted"),
+                                        bandwidths = NULL,
+                                        types_w_ev = "KM",
+                                        max_w_mod = NULL,
+                                        max_w_ev = 1000,
+                                        mat_w = NULL, # when mat_w is not NULL, and type_w is NULL, the column 1 of mat_w is employed for fitting
+                                        y_no_cens_var = NULL,
 
                                         # param for RF
-                                        mode_w_RF = 1,
+                                        mode_sw_RF = 1,
                                         ntree = 100,
                                         minleaf = 5,
                                         maxdepth = 6,
@@ -571,98 +572,106 @@ weighted_regression_survival = function(y_var,
   # Preprocessing of the arguments & data
 
   ## specific preprocessing compared to Cox/RSF regression
-  type_weights = match.arg(as.character(type_weights), c("KM", "Cox", "RSF", "unif"))
-  weights_manual = !is.null(mat_weights)
-  type_regression = match.arg(as.character(type_regression), c("RF", "gam"))
+  type_w = match.arg(as.character(type_w), c("KM", "Cox", "RSF", "unif"))
+  weights_manual = !is.null(mat_w)
+  type_reg = match.arg(as.character(type_reg), c("RF", "gam"))
   # --------------------------------------------------------------------------------
 
-  eval_methods <- match.arg(as.character(eval_methods), c("concordance","single", "group", "weighted"), several.ok = T)
-  types_weights_eval = match.arg(as.character(types_weights_eval), c("KM", "Cox", "RSF", "unif"), several.ok = T)
-  types_weights_eval = unique(c(type_weights, types_weights_eval)) # weights for trainig are used for evaluation
+  ev_methods <- match.arg(as.character(ev_methods), c("concordance", "group", "weighted"), several.ok = T)
+  if (is.null(bandwidths) & ("group" %in% ev_methods)) bandwidths = 50
+  if (is.null(max_w_mod)) max_w_mod = floor(sqrt(nrow(train))/2)
+
+  types_w_ev = match.arg(as.character(types_w_ev), c("KM", "Cox", "RSF", "unif"), several.ok = T)
+  types_w_ev = unique(c(type_w, types_w_ev)) # weights for trainig are used for evaluation
 
   if(is.null(mtry)){mtry = floor(sqrt(length(x_vars)))}
 
-  # column names of mat_weights should be explicit
-  if (!is.null(mat_weights) & is.null(colnames(mat_weights))) colnames(mat_weights) = paste0("w",1:ncol(mat_weights))
+  # column names of mat_w should be explicit
+  if (!is.null(mat_w) & is.null(colnames(mat_w))) colnames(mat_w) = paste0("w",1:ncol(mat_w))
 
-  if (is.null(y_non_censored_var)) {
+  if (is.null(y_no_cens_var)) {
     phi_non_censored_name = NULL
   } else {
     phi_non_censored_name = "phi_non_censored"
   }
 
-  if (!is.null(data_test)){
-    data = rbind(data_train[,c(y_var, delta_var, x_vars, y_non_censored_var)],
-                 data_test[,c(y_var, delta_var, x_vars, y_non_censored_var)])
-    data$is_train = c(rep(1, nrow(data_train)), rep(0, nrow(data_test)))
+  if (!is.null(test)){
+    data = rbind(train[,c(y_var, delta_var, x_vars, y_no_cens_var)],
+                 test[,c(y_var, delta_var, x_vars, y_no_cens_var)])
+    data$is_train = c(rep(1, nrow(train)), rep(0, nrow(test)))
   } else {
-    data = data_train[,c(y_var, delta_var, x_vars, y_non_censored_var)]
+    data = train[,c(y_var, delta_var, x_vars, y_no_cens_var)]
     data$is_train = 1
   }
 
-  if (is.null(max_time)){max_time = max(data_train[which(data_train[, delta_var] == 1), y_var])}
+  if (("group" %in% ev_methods) & (nrow(data) < 500)){
+    bandwidths = pmin(bandwidths, ifelse(!is.null(test), nrow(test), nrow(train)))
+    stop("group performance criteria must not be accurate because it
+         needs more observations to converge")
+  }
+  if (is.null(max_time)){max_time = max(train[which(train[, delta_var] == 1), y_var])}
 
   data$y_prime = pmin(data[,y_var], max_time)
   data$delta_prime = 1 * ((data[,delta_var] != 0) | (data[,y_var] >= max_time))
   data$phi = sapply(X = 1:length(data$y_prime),
                     FUN = function(i){do.call(phi, c(list(x=data$y_prime[i]), phi.args))})
-  if(!is.null(y_non_censored_var)){
+  if(!is.null(y_no_cens_var)){
     data$phi_non_censored = sapply(X = 1:nrow(data),
-                                   FUN = function(i){do.call(phi, c(list(x=pmin(data[,y_non_censored_var], max_time)[i]), phi.args))})
+                                   FUN = function(i){do.call(phi, c(list(x=pmin(data[,y_no_cens_var], max_time)[i]), phi.args))})
   }
 
   if (weights_manual){
-    if (nrow(mat_weights) != nrow(data)){stop("mat_weights should satisfy nrow(mat_weights) = nrow(data_train) + nrow(data_test)")}
-    if (is.null(type_weights)){
-      type_weights = colnames(mat_weights)[1]
+    if (nrow(mat_w) != nrow(data)){stop("mat_w should satisfy nrow(mat_w) = nrow(train) + nrow(test)")}
+    if (is.null(type_w)){
+      type_w = colnames(mat_w)[1]
     }
-    v_weights_model_train = mat_weights[1:nrow(data_train), type_weights]
-    mat_weights_train = mat_weights[1:nrow(data_train),]
-    sum_weights_train = apply(X = mat_weights_train, MARGIN = 2, FUN = sum)
-    censoring_model_object = NULL
-    if (!is.null(data_test)){
-      mat_weights_test = mat_weights[(nrow(data_train) +1):nrow(data),]
-      sum_weights_test = apply(X = mat_weights_test, MARGIN = 2, FUN = sum)
+    w_mod_train = mat_w[1:nrow(train), type_w]
+    mat_w_train = mat_w[1:nrow(train),]
+    sum_w_train = apply(X = mat_w_train, MARGIN = 2, FUN = sum)
+    cens_mod_obj = NULL
+    if (!is.null(test)){
+      mat_w_test = mat_w[(nrow(train) +1):nrow(data),]
+      sum_w_test = apply(X = mat_w_test, MARGIN = 2, FUN = sum)
     }
   }
 
   if (!weights_manual){
     # Computation of the weitghts_eval
-    mat_weights_train = matrix(rep(0, length(types_weights_eval) * sum(data$is_train == 1) ), ncol = length(types_weights_eval))
-    if (!is.null(data_test)){
-      mat_weights_test = matrix(rep(0, length(types_weights_eval) * sum(data$is_train == 0) ), ncol = length(types_weights_eval))
+    mat_w_train = matrix(rep(0, length(types_w_ev) * sum(data$is_train == 1) ), ncol = length(types_w_ev))
+    if (!is.null(test)){
+      mat_w_test = matrix(rep(0, length(types_w_ev) * sum(data$is_train == 0) ), ncol = length(types_w_ev))
     }
-    if (is.null(data_test)){
-      mat_weights_test = NULL
+    if (is.null(test)){
+      mat_w_test = NULL
     }
 
-    for (j in 1:length(types_weights_eval)){
-      if (types_weights_eval[j] == type_weights){
-        # need to differentiate type_weights or not because of the option "censoring_model_object"
+    for (j in 1:length(types_w_ev)){
+      if (types_w_ev[j] == type_w){
+        # need to differentiate type_w or not because of the option "cens_mod_obj"
         res_weights_train = make_weights(data = data[data$is_train == 1, ],
                                          y_name = "y_prime",
                                          delta_name = "delta_prime",
                                          y_name2 = y_var,
                                          delta_name2 = delta_var,
-                                         type = types_weights_eval[j],
+                                         type = types_w_ev[j],
                                          max_ratio_weights = 1000,
                                          x_vars = x_vars,
-                                         censoring_model_object = censoring_model_object)
-        mat_weights_train[,j] = res_weights_train$weights
-        v_weights_model_train = res_weights_train$weights
-        censoring_model_object = res_weights_train$censoring_model_object
+                                         cens_mod_obj = cens_mod_obj)
+        mat_w_train[,j] = res_weights_train$weights
+        w_mod_train = res_weights_train$weights
+        cens_mod_obj = res_weights_train$cens_mod_obj
 
-        if (!is.null(data_test)){
+        if (!is.null(test)){
           res_weights_test = make_weights(data = data[data$is_train == 0, ],
                                           y_name = "y_prime",
                                           delta_name = "delta_prime",
                                           y_name2 = y_var,
                                           delta_name2 = delta_var,
-                                          type = types_weights_eval[j],
+                                          type = types_w_ev[j],
                                           max_ratio_weights = 1000,
                                           x_vars = x_vars,
-                                          censoring_model_object = FALSE)
-          mat_weights_test[,j] = res_weights_test$weights
+                                          cens_mod_obj = FALSE)
+          mat_w_test[,j] = res_weights_test$weights
         }
       } else {
         res_weights_train = make_weights(data = data[data$is_train == 1, ],
@@ -670,153 +679,153 @@ weighted_regression_survival = function(y_var,
                                          delta_name = "delta_prime",
                                          y_name2 = y_var,
                                          delta_name2 = delta_var,
-                                         type = types_weights_eval[j],
+                                         type = types_w_ev[j],
                                          max_ratio_weights = 1000,
                                          x_vars = x_vars,
-                                         censoring_model_object = FALSE)
-        mat_weights_train[,j] = res_weights_train$weights
+                                         cens_mod_obj = FALSE)
+        mat_w_train[,j] = res_weights_train$weights
 
-        if (!is.null(data_test)){
+        if (!is.null(test)){
           res_weights_test = make_weights(data = data[data$is_train == 0, ],
                                           y_name = "y_prime",
                                           delta_name = "delta_prime",
                                           y_name2 = y_var,
                                           delta_name2 = delta_var,
-                                          type = types_weights_eval[j],
+                                          type = types_w_ev[j],
                                           max_ratio_weights = 1000,
                                           x_vars = x_vars,
-                                          censoring_model_object = FALSE)
-          mat_weights_test[,j] = res_weights_test$weights
+                                          cens_mod_obj = FALSE)
+          mat_w_test[,j] = res_weights_test$weights
         }
       }
     }
 
-    colnames(mat_weights_train) = types_weights_eval
-    sum_weights_train = apply(X = mat_weights_train, MARGIN = 2, FUN = sum)
-    names(sum_weights_train) = types_weights_eval
-    if (!is.null(data_test)){
-      colnames(mat_weights_test) = types_weights_eval
-      sum_weights_test = apply(X = mat_weights_test, MARGIN = 2, FUN = sum)
-      names(sum_weights_test) = types_weights_eval
+    colnames(mat_w_train) = types_w_ev
+    sum_w_train = apply(X = mat_w_train, MARGIN = 2, FUN = sum)
+    names(sum_w_train) = types_w_ev
+    if (!is.null(test)){
+      colnames(mat_w_test) = types_w_ev
+      sum_w_test = apply(X = mat_w_test, MARGIN = 2, FUN = sum)
+      names(sum_w_test) = types_w_ev
     }
   }
 
   # Thresholding of the weights
   # weigths_model
   ## train
-  n_weights_model_modif_train = sum(v_weights_model_train > (min(v_weights_model_train[v_weights_model_train > 0]) * max_ratio_weights_model))
-  v_weights_model_train = pmin(v_weights_model_train, min(v_weights_model_train[v_weights_model_train > 0]) * max_ratio_weights_model)
-  v_weights_model_train = v_weights_model_train / sum(v_weights_model_train)
+  n_w_mod_modif_train = sum(w_mod_train > (min(w_mod_train[w_mod_train > 0]) * max_w_mod))
+  w_mod_train = pmin(w_mod_train, min(w_mod_train[w_mod_train > 0]) * max_w_mod)
+  w_mod_train = w_mod_train / sum(w_mod_train)
 
 
   # weights_eval
   ## train
-  n_weights_eval_modif_train = apply(X = mat_weights_train, MARGIN = 2,
+  n_w_ev_modif_train = apply(X = mat_w_train, MARGIN = 2,
                                      FUN = function(x){
-                                       x = sum(x > min(x[x > 0]) * max_ratio_weights_eval)
+                                       x = sum(x > min(x[x > 0]) * max_w_ev)
                                      })
 
-  mat_weights_train = apply(X = mat_weights_train, MARGIN = 2,
+  mat_w_train = apply(X = mat_w_train, MARGIN = 2,
                             FUN = function(x){
-                              x = pmin(x, min(x[x > 0]) * max_ratio_weights_eval)
+                              x = pmin(x, min(x[x > 0]) * max_w_ev)
                               x = x / sum(x)
                             })
   ## test
-  if (!is.null(data_test)){
+  if (!is.null(test)){
 
-    n_weights_eval_modif_test = apply(X = mat_weights_test, MARGIN = 2,
+    n_w_ev_modif_test = apply(X = mat_w_test, MARGIN = 2,
                                        FUN = function(x){
-                                         x = sum(x > min(x[x > 0]) * max_ratio_weights_eval)
+                                         x = sum(x > min(x[x > 0]) * max_w_ev)
                                        })
 
-    mat_weights_test = apply(X = mat_weights_test, MARGIN = 2,
+    mat_w_test = apply(X = mat_w_test, MARGIN = 2,
                              FUN = function(x){
-                               x = pmin(x, min(x[x > 0]) * max_ratio_weights_eval)
+                               x = pmin(x, min(x[x > 0]) * max_w_ev)
                                x = x / sum(x)
                              })
   }
 
   # build train & test
-  data_train = data[data$is_train == 1,]
-  if (!is.null(data_test)){
-    data_test = data[data$is_train == 0,]
+  train = data[data$is_train == 1,]
+  if (!is.null(test)){
+    test = data[data$is_train == 0,]
   }
 
 
   weighted_regression_result = make_res_weighted_regression(y_var = y_var,
                                                             delta_var = delta_var,
                                                             x_vars = x_vars,
-                                                            data_train = data_train,
-                                                            data_test = data_test,
-                                                            type_regression = type_regression,
-                                                            v_weights_model_train = v_weights_model_train,
+                                                            train = train,
+                                                            test = test,
+                                                            type_reg = type_reg,
+                                                            w_mod_train = w_mod_train,
                                                             phi = phi,
                                                             phi.args = phi.args,
                                                             max_time = max_time,
-                                                            weighted_regression_object = weighted_regression_object,
-                                                            eval_methods = eval_methods,
-                                                            v_bandwidth = v_bandwidth,
-                                                            mat_weights_train = mat_weights_train,
-                                                            mat_weights_test = mat_weights_test,
+                                                            sw_reg_obj = sw_reg_obj,
+                                                            ev_methods = ev_methods,
+                                                            bandwidths = bandwidths,
+                                                            mat_w_train = mat_w_train,
+                                                            mat_w_test = mat_w_test,
                                                             phi_non_censored_name = phi_non_censored_name,
 
                                                             ## add for rpartRF
-                                                            mode_w_RF = mode_w_RF,
-                                                            type_weights = type_weights,
-                                                            max_ratio_weights_model = max_ratio_weights_model,
+                                                            mode_sw_RF = mode_sw_RF,
+                                                            type_w = type_w,
+                                                            max_w_mod = max_w_mod,
                                                             ntree = ntree,
                                                             minleaf = minleaf,
                                                             maxdepth = maxdepth,
                                                             mtry = mtry,
                                                             ...)
 
-  weighted_regression_result$type_weights = type_weights
-  weighted_regression_result$max_ratio_weights_model = max_ratio_weights_model
-  weighted_regression_result$max_ratio_weights_eval = max_ratio_weights_eval
-  weighted_regression_result$mode_w_RF = mode_w_RF
-  weighted_regression_result$sum_weights_train = sum_weights_train
-  weighted_regression_result$n_weights_model_modif_train = n_weights_model_modif_train
-  weighted_regression_result$n_weights_eval_modif_train = n_weights_eval_modif_train
+  weighted_regression_result$type_w = type_w
+  weighted_regression_result$max_w_mod = max_w_mod
+  weighted_regression_result$max_w_ev = max_w_ev
+  weighted_regression_result$mode_sw_RF = mode_sw_RF
+  weighted_regression_result$sum_w_train = sum_w_train
+  weighted_regression_result$n_w_mod_modif_train = n_w_mod_modif_train
+  weighted_regression_result$n_w_ev_modif_train = n_w_ev_modif_train
 
-  if (!is.null(data_test)){
-    weighted_regression_result$sum_weights_test = sum_weights_test
-    weighted_regression_result$n_weights_eval_modif_test = n_weights_eval_modif_test
+  if (!is.null(test)){
+    weighted_regression_result$sum_w_test = sum_w_test
+    weighted_regression_result$n_w_ev_modif_test = n_w_ev_modif_test
   }
-  if (!is.null(censoring_model_object)){
+  if (!is.null(cens_mod_obj)){
     # return only the model for censoring fitted on train data
-    weighted_regression_result$censoring_model_object = censoring_model_object
+    weighted_regression_result$cens_mod_obj = cens_mod_obj
   }
   return(weighted_regression_result)
 }
 
 
 
-#' @title Compute the prediction of a model built with \code{\link{weighted_regression_survival}}
+#' @title Compute the prediction of a model built with \code{\link{sw_reg}}
 #'
-#' @description Given a model built wtih \code{\link{weighted_regression_survival}},
-#' \code{predict_weighted_regression_survival} allows to get the
+#' @description Given a model built wtih \code{\link{sw_reg}},
+#' \code{predict_sw_reg} allows to get the
 #' predictions of the model for new
 #' observations
 #'
-#' @param object A list output by \code{\link{weighted_regression_survival}}
+#' @param obj A list output by \code{\link{sw_reg}}
 #' @param newdata A data.frame which contains the same variables as the ones
 #' used for the training
 #' @return A list with the following elements :
-#' \item{predicted}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' \item{pred}{The vector of the pred values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
-#' \item{predicted_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
+#' \item{pred_KMloc}{The vector of the pred values for \code{phi}\eqn{(T')}
 #' for the observations of newdata with inner Kapaln Meier weights
-#' (require \code{object} to be trained with
+#' (require \code{obj} to be trained with
 #' \code{mode_w_rf = 2}).
-#' See \code{\link{weighted_regression_survival}} for more information}
-#' \item{survival_KMloc}{The matrix which contains the estimated values of the survival curves at
+#' See \code{\link{sw_reg}} for more information}
+#' \item{surv_KMloc}{The matrix which contains the estimated values of the surv curves at
 #' \code{time_points} with inner Kapaln Meier weights,
-#' for the observations of \code{newdata} (require \code{mode_w_RF = 2})}
-#' \item{time_points}{The vector of the time points where the survival curves
-#' are evaluated (require \code{mode_w_RF = 2})}
+#' for the observations of \code{newdata} (require \code{mode_sw_RF = 2})}
+#' \item{time_points}{The vector of the time points where the surv curves
+#' are evaluated (require \code{mode_sw_RF = 2})}
 #'
 #'
-#' @seealso \code{\link{weighted_regression_survival}}
+#' @seealso \code{\link{sw_reg}}
 #'
 #' @export
 #'
@@ -825,7 +834,7 @@ weighted_regression_survival = function(y_var,
 #' # ------------------------------------------------
 #' #   Load "transplant" data
 #' # ------------------------------------------------
-#' data("transplant", package = "survival")
+#' data("transplant", package = "surv")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
 #'
@@ -838,51 +847,51 @@ weighted_regression_survival = function(y_var,
 #'
 #' set.seed(17)
 #' train_lines = sample(1:nrow(transplant_bis), 600)
-#' res = weighted_regression_survival(y_var = "futime",
+#' res = sw_reg(y_var = "futime",
 #'                                    delta_var = "delta",
 #'                                    x_vars = setdiff(colnames(transplant_bis),
 #'                                                     c("futime", "delta", "event")),
-#'                                    data_train = transplant_bis[train_lines,],
-#'                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"),
-#'                                    mode_w_RF = 2)
+#'                                    train = transplant_bis[train_lines,],
+#'                                    types_w_ev = c("KM", "Cox", "RSF", "unif"),
+#'                                    mode_sw_RF = 2)
 #'
 #' # ------------------------------------------------
 #' #   Predict on new data
 #' # ------------------------------------------------
 #'
-#' pred = predict_weighted_regression_survival(object = res,
+#' pred = predict_sw_reg(obj = res,
 #'                                             newdata = transplant_bis[-train_lines,])
 
 
 
-predict_weighted_regression_survival = function(object, newdata){
-  if (is.null(object$weighted_RF_object) &
-      is.null(object$weighted_gam_object) &
-      is.null(object$weighted_rpartRF_object)){
-    stop("to use predict_weighted_regression_survival on a weighted_regression_survival object,
-         you shoud specify weighted_regression_object = TRUE in the call of weighted_regression_survival")
+predict_sw_reg = function(obj, newdata){
+  if (is.null(obj$sw_RF_obj) &
+      is.null(obj$sw_gam_obj) &
+      is.null(obj$sw_rpartRF_obj)){
+    stop("to use predict_sw_reg on a sw_reg obj,
+         you shoud specify sw_reg_obj = TRUE in the call of sw_reg")
   }
 
-  if (!is.null(object$weighted_RF_object)){
-    predictions = randomForestSRC::predict.rfsrc(object$weighted_RF_object, newdata[,object$x_vars])$predicted
-    return(list(predicted = as.vector(predictions)))
+  if (!is.null(obj$sw_RF_obj)){
+    predictions = randomForestSRC::predict.rfsrc(obj$sw_RF_obj, newdata[,obj$x_vars])$pred
+    return(list(pred = as.vector(predictions)))
   }
-  if (!is.null(object$weighted_gam_object)){
-    predictions = mgcv::predict.gam(object$weighted_gam_object, newdata[,object$x_vars], type = "response")
-    return(list(predicted = as.vector(predictions)))
+  if (!is.null(obj$sw_gam_obj)){
+    predictions = mgcv::predict.gam(obj$sw_gam_obj, newdata[,obj$x_vars], type = "response")
+    return(list(pred = as.vector(predictions)))
   }
-  if (!is.null(object$weighted_rpartRF_object)){
-    res_predictions = predict_rpartRF(object = object$weighted_rpartRF_object,
-                                  newdata = newdata[,object$x_vars],
+  if (!is.null(obj$sw_rpartRF_obj)){
+    res_predictions = predict_rpartRF(obj = obj$sw_rpartRF_obj,
+                                  newdata = newdata[,obj$x_vars],
                                   type = "normal")
 
-    res_predictions_KMloc = predict_rpartRF(object = object$weighted_rpartRF_object,
-                                       newdata = newdata[,object$x_vars],
+    res_predictions_KMloc = predict_rpartRF(obj = obj$sw_rpartRF_obj,
+                                       newdata = newdata[,obj$x_vars],
                                        type = "KMloc")
 
-    return(list(predicted = res_predictions$predicted,
-                predicted_KMloc = res_predictions_KMloc$predicted_KMloc,
-                survival_KMloc = res_predictions_KMloc$preds_surv_KMloc,
+    return(list(pred = res_predictions$pred,
+                pred_KMloc = res_predictions_KMloc$pred_KMloc,
+                surv_KMloc = res_predictions_KMloc$preds_surv_KMloc,
                 time_points = res_predictions_KMloc$time))
   }
 }
@@ -891,24 +900,24 @@ predict_weighted_regression_survival = function(object, newdata){
 make_res_weighted_regression = function(y_var,
                                         delta_var,
                                         x_vars,
-                                        data_train,
-                                        data_test,
-                                        type_regression,
-                                        v_weights_model_train,
+                                        train,
+                                        test,
+                                        type_reg,
+                                        w_mod_train,
                                         phi,
                                         phi.args,
                                         max_time,
-                                        weighted_regression_object,
-                                        eval_methods,
-                                        v_bandwidth,
-                                        mat_weights_train,
-                                        mat_weights_test,
+                                        sw_reg_obj,
+                                        ev_methods,
+                                        bandwidths,
+                                        mat_w_train,
+                                        mat_w_test,
                                         phi_non_censored_name,
 
                                         # sup. arguments for rpartRF
-                                        mode_w_RF,
-                                        type_weights,
-                                        max_ratio_weights_model,
+                                        mode_sw_RF,
+                                        type_w,
+                                        max_w_mod,
                                         ntree,
                                         minleaf,
                                         maxdepth,
@@ -917,11 +926,11 @@ make_res_weighted_regression = function(y_var,
 
 
   # Build and predict on train
-  if (type_regression == "RF"){
-    if (mode_w_RF == 1){
+  if (type_reg == "RF"){
+    if (mode_sw_RF == 1){
       RF_fit = randomForestSRC::rfsrc(formula = phi ~ .,
-                                      data = data_train[v_weights_model_train > 0, c("phi",x_vars)],
-                                      case.wt =  v_weights_model_train[v_weights_model_train > 0],
+                                      data = train[w_mod_train > 0, c("phi",x_vars)],
+                                      case.wt =  w_mod_train[w_mod_train > 0],
                                       forest = T,
                                       ntree = ntree,
                                       mtry = mtry,
@@ -930,198 +939,198 @@ make_res_weighted_regression = function(y_var,
                                       ...)
 
       overfitted_predictions = randomForestSRC::predict.rfsrc(RF_fit,
-                                                              data_train[,x_vars])$predicted
+                                                              train[,x_vars])$pred
     }
-    if (mode_w_RF == 2){
-      rpartRF_fit = rpartRF(data = data_train,
+    if (mode_sw_RF == 2){
+      rpartRF_fit = rpartRF(data = train,
                             y_var = y_var,
                             delta_var = delta_var,
                             x_vars = x_vars,
-                            type_weights = type_weights,
+                            type_w = type_w,
                             phi = phi,
                             phi.args = phi.args,
                             max_time = max_time,
-                            max_ratio_weights_model = max_ratio_weights_model,
+                            max_w_mod = max_w_mod,
                             ntree = ntree,
                             minleaf = minleaf,
                             maxdepth = maxdepth,
                             ...)
 
 
-      overfitted_predictions = predict_rpartRF(object = rpartRF_fit,
-                                               newdata = data_train[,x_vars],
-                                               type = "normal")$predicted
+      overfitted_predictions = predict_rpartRF(obj = rpartRF_fit,
+                                               newdata = train[,x_vars],
+                                               type = "normal")$pred
 
-      res_overfitted_predictions_KMloc = predict_rpartRF(object = rpartRF_fit,
-                                                       newdata = data_train[,x_vars],
+      res_overfitted_predictions_KMloc = predict_rpartRF(obj = rpartRF_fit,
+                                                       newdata = train[,x_vars],
                                                        type = "KMloc")
 
-      overfitted_predictions_KMloc = res_overfitted_predictions_KMloc$predicted_KMloc
+      overfitted_predictions_KMloc = res_overfitted_predictions_KMloc$pred_KMloc
 
     }
   }
 
-  if (type_regression == "gam"){
+  if (type_reg == "gam"){
     gam_fit = mgcv::gam(formula = stats::as.formula(paste0("phi ~ ", paste0(x_vars, collapse = "+"))),
-                        data = data_train[v_weights_model_train > 0, c("phi",x_vars)],
-                        weights = v_weights_model_train[v_weights_model_train > 0],
+                        data = train[w_mod_train > 0, c("phi",x_vars)],
+                        weights = w_mod_train[w_mod_train > 0],
                         ...)
 
     overfitted_predictions = mgcv::predict.gam(gam_fit ,
-                                               data_train[,x_vars],
+                                               train[,x_vars],
                                                type = "response")
   }
 
   # Eval on train
-  list_criteria_train = eval_model(predictions = overfitted_predictions,
-                                   data = data_train,
+  perf_train = eval_model(predictions = overfitted_predictions,
+                                   data = train,
                                    phi_name = "phi",
                                    y_name = "y_prime",
                                    delta_name = "delta_prime",
                                    max_time = max_time,
-                                   eval_methods = eval_methods,
+                                   ev_methods = ev_methods,
                                    phi = phi,
                                    phi.args = phi.args,
-                                   mat_weights = mat_weights_train,
+                                   mat_w = mat_w_train,
                                    phi_non_censored_name = phi_non_censored_name,
-                                   v_bandwidth = v_bandwidth)
+                                   bandwidths = bandwidths)
 
-  if ( (type_regression == "RF") & (mode_w_RF == 2) ){
-    list_criteria_train_KMloc = eval_model(predictions = overfitted_predictions_KMloc,
-                                          data = data_train,
+  if ( (type_reg == "RF") & (mode_sw_RF == 2) ){
+    perf_train_KMloc = eval_model(predictions = overfitted_predictions_KMloc,
+                                          data = train,
                                           phi_name = "phi",
                                           y_name = "y_prime",
                                           delta_name = "delta_prime",
                                           max_time = max_time,
-                                          eval_methods = eval_methods,
+                                          ev_methods = ev_methods,
                                           phi = phi,
                                           phi.args = phi.args,
-                                          mat_weights = mat_weights_train,
+                                          mat_w = mat_w_train,
                                           phi_non_censored_name = phi_non_censored_name,
-                                          v_bandwidth = v_bandwidth)
+                                          bandwidths = bandwidths)
   }
 
-  if (!is.null(data_test)){
+  if (!is.null(test)){
 
     # Predict on test
-    if (type_regression == "RF"){
-      if (mode_w_RF == 1){
+    if (type_reg == "RF"){
+      if (mode_sw_RF == 1){
         test_predictions = randomForestSRC::predict.rfsrc(RF_fit,
-                                                          data_test[,x_vars])$predicted
+                                                          test[,x_vars])$pred
       }
-      if (mode_w_RF == 2){
+      if (mode_sw_RF == 2){
 
-        test_predictions = predict_rpartRF(object = rpartRF_fit,
-                                           newdata = data_test[,x_vars],
-                                           type = "normal")$predicted
+        test_predictions = predict_rpartRF(obj = rpartRF_fit,
+                                           newdata = test[,x_vars],
+                                           type = "normal")$pred
 
 
-        res_test_predictions_KMloc = predict_rpartRF(object = rpartRF_fit,
-                                                   newdata = data_test[,x_vars],
+        res_test_predictions_KMloc = predict_rpartRF(obj = rpartRF_fit,
+                                                   newdata = test[,x_vars],
                                                    type = "KMloc")
 
-        test_predictions_KMloc = res_test_predictions_KMloc$predicted_KMloc
+        test_predictions_KMloc = res_test_predictions_KMloc$pred_KMloc
 
       }
     }
-    if (type_regression == "gam"){
+    if (type_reg == "gam"){
       test_predictions = mgcv::predict.gam(gam_fit,
-                                           data_test[,x_vars],
+                                           test[,x_vars],
                                            type = "response")
     }
 
     # Eval on test
-    list_criteria_test = eval_model(predictions = test_predictions,
-                                    data = data_test,
+    perf_test = eval_model(predictions = test_predictions,
+                                    data = test,
                                     phi_name = "phi",
                                     y_name = "y_prime",
                                     delta_name = "delta_prime",
                                     max_time = max_time,
-                                    eval_methods = eval_methods,
+                                    ev_methods = ev_methods,
                                     phi = phi,
                                     phi.args = phi.args,
-                                    mat_weights = mat_weights_test,
+                                    mat_w = mat_w_test,
                                     phi_non_censored_name = phi_non_censored_name,
-                                    v_bandwidth = v_bandwidth)
+                                    bandwidths = bandwidths)
 
-    if ((type_regression == "RF") & (mode_w_RF == 2)){
-      list_criteria_test_KMloc = eval_model(predictions = test_predictions_KMloc,
-                                           data = data_test,
+    if ((type_reg == "RF") & (mode_sw_RF == 2)){
+      perf_test_KMloc = eval_model(predictions = test_predictions_KMloc,
+                                           data = test,
                                            phi_name = "phi",
                                            y_name = "y_prime",
                                            delta_name = "delta_prime",
                                            max_time = max_time,
-                                           eval_methods = eval_methods,
+                                           ev_methods = ev_methods,
                                            phi = phi,
                                            phi.args = phi.args,
-                                           mat_weights = mat_weights_test,
+                                           mat_w = mat_w_test,
                                            phi_non_censored_name = phi_non_censored_name,
-                                           v_bandwidth = v_bandwidth)
+                                           bandwidths = bandwidths)
     }
   }
 
   result = list(
-    predicted_train = overfitted_predictions,
-    list_criteria_train = list_criteria_train,
-    data_train = data_train[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
-    v_weights_model_train = v_weights_model_train,
-    mat_weights_train = mat_weights_train,
-    type_regression = type_regression,
+    pred_train = overfitted_predictions,
+    perf_train = perf_train,
+    train = train[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)],
+    w_mod_train = w_mod_train,
+    mat_w_train = mat_w_train,
+    type_reg = type_reg,
     x_vars = x_vars,
     max_time = max_time,
     phi = phi,
     phi.args = phi.args,
-    censoring_rate_with_threshold = (sum(data_train$delta_prime == 0) + sum(data_test$delta_prime == 0)) / (nrow(data_train) + nrow(data_test))
+    cens_rate = (sum(train$delta_prime == 0) + sum(test$delta_prime == 0)) / (nrow(train) + nrow(test))
   )
-  if(weighted_regression_object){
-    if (type_regression == "RF"){
-      if (mode_w_RF == 1){
-        result$weighted_RF_object = RF_fit
+  if(sw_reg_obj){
+    if (type_reg == "RF"){
+      if (mode_sw_RF == 1){
+        result$sw_RF_obj = RF_fit
       }
-      if (mode_w_RF == 2){
-        result$weighted_rpartRF_object = rpartRF_fit
+      if (mode_sw_RF == 2){
+        result$sw_rpartRF_obj = rpartRF_fit
       }
     }
-    if (type_regression == "gam"){
-      result$weighted_gam_object = gam_fit
+    if (type_reg == "gam"){
+      result$sw_gam_obj = gam_fit
     }
   }
-  if ((type_regression == "RF") & (mode_w_RF == 2)){
-    result$list_criteria_train_KMloc = list_criteria_train_KMloc
+  if ((type_reg == "RF") & (mode_sw_RF == 2)){
+    result$perf_train_KMloc = perf_train_KMloc
     result$time_points = res_overfitted_predictions_KMloc$time
-    result$survival_train_KMloc = res_overfitted_predictions_KMloc$preds_surv_KMloc
-    result$predicted_train_KMloc = overfitted_predictions_KMloc
+    result$surv_train_KMloc = res_overfitted_predictions_KMloc$preds_surv_KMloc
+    result$pred_train_KMloc = overfitted_predictions_KMloc
   }
-  if (!is.null(data_test)){
-    result$predicted_test = test_predictions
-    result$list_criteria_test = list_criteria_test
-    result$data_test = data_test[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
-    result$mat_weights_test = mat_weights_test
-    if ((type_regression == "RF") & (mode_w_RF == 2)){
-      result$list_criteria_test_KMloc = list_criteria_test_KMloc
-      result$survival_test_KMloc = res_test_predictions_KMloc$preds_surv_KMloc
-      result$predicted_test_KMloc = test_predictions_KMloc
+  if (!is.null(test)){
+    result$pred_test = test_predictions
+    result$perf_test = perf_test
+    result$test = test[,c(y_var, delta_var, "y_prime", "delta_prime", "phi", phi_non_censored_name, x_vars)]
+    result$mat_w_test = mat_w_test
+    if ((type_reg == "RF") & (mode_sw_RF == 2)){
+      result$perf_test_KMloc = perf_test_KMloc
+      result$surv_test_KMloc = res_test_predictions_KMloc$preds_surv_KMloc
+      result$pred_test_KMloc = test_predictions_KMloc
     }
   }
   return(result)
 }
 
 
-predict_nodes = function (object, newdata, na.action = stats::na.pass) {
+predict_nodes = function (obj, newdata, na.action = stats::na.pass) {
   where <-
     if (missing(newdata))
-      object$where
+      obj$where
   else {
     if (is.null(attr(newdata, "terms"))) {
-      Terms <- stats::delete.response(object$terms)
+      Terms <- stats::delete.response(obj$terms)
       newdata <- stats::model.frame(Terms, newdata, na.action = na.action,
-                             xlev = attr(object, "xlevels"))
+                             xlev = attr(obj, "xlevels"))
       if (!is.null(cl <- attr(Terms, "dataClasses")))
         stats::.checkMFClasses(cl, newdata, TRUE)
     }
-    rpart:::pred.rpart(object, rpart:::rpart.matrix(newdata))
+    rpart:::pred.rpart(obj, rpart:::rpart.matrix(newdata))
   }
-  as.integer(row.names(object$frame))[where]
+  as.integer(row.names(obj$frame))[where]
 }
 
 
@@ -1129,11 +1138,11 @@ rpartRF = function(data,
                    y_var,
                    delta_var,
                    x_vars,
-                   type_weights,
+                   type_w,
                    phi,
                    phi.args,
                    max_time,
-                   max_ratio_weights_model,
+                   max_w_mod,
                    ntree, # peut-etre a enlever plus tard
                    minleaf,
                    maxdepth,
@@ -1153,9 +1162,9 @@ rpartRF = function(data,
                                   y_name2 = y_var,
                                   delta_name2 = delta_var,
                                   x_vars = x_vars,
-                                  censoring_model_object = F,
-                                  max_ratio_weights = max_ratio_weights_model,
-                                  type = type_weights,
+                                  cens_mod_obj = F,
+                                  max_ratio_weights = max_w_mod,
+                                  type = type_w,
                                   data = d_train)$weights
 
     model = rpart::rpart(formula = phi ~ .,
@@ -1165,11 +1174,11 @@ rpartRF = function(data,
                          maxdepth = maxdepth,
                          ...)
 
-    pred_nodes = predict_nodes(object = model, newdata = d_train[,x_vars])
+    pred_nodes = predict_nodes(obj = model, newdata = d_train[,x_vars])
     nelson_allen_estimates = do.call(rbind,
                                      args = lapply(X = unique(pred_nodes),
                                                    FUN = function(node){
-                                                     fit = survival::survfit(formula = stats::as.formula(paste0("Surv(time = ", y_var,", event = ",  delta_var, ") ~ 1")),
+                                                     fit = surv::survfit(formula = stats::as.formula(paste0("Surv(time = ", y_var,", event = ",  delta_var, ") ~ 1")),
                                                                              data = d_train[pred_nodes == node, ])
                                                      nelson_allen = cumsum(fit$n.event/fit$n.risk)
                                                      return(
@@ -1194,15 +1203,15 @@ rpartRF = function(data,
   )
 }
 
-predict_rpartRF = function(object, newdata, type){
+predict_rpartRF = function(obj, newdata, type){
   if (type == "normal"){
-    preds = do.call(what = cbind, args = lapply(X = object$list_models,
-                                                FUN = function(x){rpart:::predict.rpart(object = x$model, newdata = newdata)}))
-    return(list(predicted = as.vector(rowMeans(preds))))
+    preds = do.call(what = cbind, args = lapply(X = obj$list_models,
+                                                FUN = function(x){rpart:::predict.rpart(obj = x$model, newdata = newdata)}))
+    return(list(pred = as.vector(rowMeans(preds))))
   }
   if (type == "KMloc"){
-    preds_node = do.call(what = cbind, args = lapply(X = object$list_models,
-                                                     FUN = function(x){predict_nodes(object = x$model, newdata = newdata)}))
+    preds_node = do.call(what = cbind, args = lapply(X = obj$list_models,
+                                                     FUN = function(x){predict_nodes(obj = x$model, newdata = newdata)}))
     ntree = ncol(preds_node)
 
     #not as fast as the next solution but no bug here
@@ -1211,8 +1220,8 @@ predict_rpartRF = function(object, newdata, type){
             args = lapply(X = 1:dim(preds_node)[1], FUN = function(j){ # t(preds_node)
               mat_nelson_allen = do.call(what = rbind,
                       args = lapply(X = 1:ntree, FUN = function(i){
-                        object$list_models[[i]]$nelson_allen_estimates[object$list_models[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
-                                                           2:ncol(object$list_models[[i]]$nelson_allen_estimates)]
+                        obj$list_models[[i]]$nelson_allen_estimates[obj$list_models[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
+                                                           2:ncol(obj$list_models[[i]]$nelson_allen_estimates)]
                       }))
               colMeans(mat_nelson_allen)
     }))
@@ -1221,12 +1230,12 @@ predict_rpartRF = function(object, newdata, type){
     # t1 = Sys.time()
     # mean_nelson_allen_estimates = do.call(what = rbind,
     #                                       args = lapply(X = 1:dim(preds_node)[1], FUN = function(j){
-    #                                         nelson_allen = rep(0, dim(object$list_models[[1]]$nelson_allen_estimates)[2] - 1)
+    #                                         nelson_allen = rep(0, dim(obj$list_models[[1]]$nelson_allen_estimates)[2] - 1)
     #                                         for (i in 1:ntree){
     #                                           nelson_allen =
     #                                             nelson_allen +
-    #                                             object$list_models[[i]]$nelson_allen_estimates[object$list_models[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
-    #                                                                                2:ncol(object$list_models[[i]]$nelson_allen_estimates)]
+    #                                             obj$list_models[[i]]$nelson_allen_estimates[obj$list_models[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
+    #                                                                                2:ncol(obj$list_models[[i]]$nelson_allen_estimates)]
     #                                         }
     #                                         return(nelson_allen / ntree)
     #                                       }))
@@ -1234,19 +1243,19 @@ predict_rpartRF = function(object, newdata, type){
 
     preds_surv_KMloc = exp(-mean_nelson_allen_estimates)
 
-    predicted_KMloc =
-      (preds_surv_KMloc[, which(object$list_models[[1]]$time < object$max_time)] -
-         cbind(preds_surv_KMloc[, which(object$list_models[[1]]$time < object$max_time)[-1] ], 0)) %*%
-      sapply(X = 1:length(c(object$list_models[[1]]$time[which(object$list_models[[1]]$time < object$max_time)[-1]], object$max_time)),
-             FUN = function(i){do.call(object$phi,
-                                       c(list(x=c(object$list_models[[1]]$time[which(object$list_models[[1]]$time < object$max_time)[-1]],
-                                                  object$max_time)[i]),
-                                         object$phi.args))})
+    pred_KMloc =
+      (preds_surv_KMloc[, which(obj$list_models[[1]]$time < obj$max_time)] -
+         cbind(preds_surv_KMloc[, which(obj$list_models[[1]]$time < obj$max_time)[-1] ], 0)) %*%
+      sapply(X = 1:length(c(obj$list_models[[1]]$time[which(obj$list_models[[1]]$time < obj$max_time)[-1]], obj$max_time)),
+             FUN = function(i){do.call(obj$phi,
+                                       c(list(x=c(obj$list_models[[1]]$time[which(obj$list_models[[1]]$time < obj$max_time)[-1]],
+                                                  obj$max_time)[i]),
+                                         obj$phi.args))})
 
 
-    return(list(time = object$list_models[[1]]$time,
+    return(list(time = obj$list_models[[1]]$time,
                 preds_surv_KMloc = exp(-mean_nelson_allen_estimates),
-                predicted_KMloc = as.vector(predicted_KMloc)))
+                pred_KMloc = as.vector(pred_KMloc)))
   }
 }
 
