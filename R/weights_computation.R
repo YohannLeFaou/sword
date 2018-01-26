@@ -34,7 +34,7 @@ make_KM_weights = function(vect_y, vect_delta, vect_c = NULL){
     # S_C is estimated by Kaplan Meier estimator
     delta_c = 1 - vect_delta
     data_c = data.frame(y = vect_y, delta_c = delta_c)
-    km_c = surv::survfit(surv::Surv(time = y, event = delta_c) ~ 1,
+    km_c = survival::survfit(survival::Surv(time = y, event = delta_c) ~ 1,
                              data = data_c,
                              type = "kaplan-meier")
   } else{
@@ -42,7 +42,7 @@ make_KM_weights = function(vect_y, vect_delta, vect_c = NULL){
     delta_c = rep(1, length(vect_y))
     data_c = data.frame(y = vect_c,
                         delta_c = delta_c)
-    km_c = surv::survfit(surv::Surv(time = y , event = delta_c) ~ 1,
+    km_c = survival::survfit(survival::Surv(time = y , event = delta_c) ~ 1,
                              data = data_c,
                              type = "kaplan-meier")
   }
@@ -101,11 +101,11 @@ make_weights = function(data,
   if (type == "Cox"){
     # possible to make a functions "make_cox_weights", "make_RSF_weights"
     formula = stats::as.formula(paste0("Surv(",y_name2,", deltaC ) ~ ."))
-    cox_fit = surv::coxph(formula = formula,
+    cox_fit = survival::coxph(formula = formula,
                               data = data[,c(y_name2, "deltaC", x_vars)]
     )
 
-    baseline_cox = surv::basehaz(cox_fit)
+    baseline_cox = survival::basehaz(cox_fit)
     ref_surv = data.frame(time = c(0, baseline_cox$time),
                           surv = c(1, exp(-baseline_cox$hazard)))
 
@@ -136,7 +136,7 @@ make_weights = function(data,
 
     weights = make_weights_from_surv_curves(vect_y = data[, y_name],
                                                 vect_delta = data[, delta_name],
-                                                mat_surv_curves_C = cbind(1, RSF_fit$surv.oob),
+                                                mat_surv_curves_C = cbind(1, RSF_fit$survival.oob),
                                                 time_points = c(0, RSF_fit$time.interest))
     if(cens_mod_obj){list_result$cens_mod_obj = RSF_fit}
   }

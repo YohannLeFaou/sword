@@ -144,7 +144,7 @@
 #'
 #' The \code{types_w_ev} argument allows the use of four kinds of IPC weights :
 #' \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. The first three types of weights correspond
-#' to different ways to estimate the surv function of the censoring. On the other hand, \code{"unif"}
+#' to different ways to estimate the survival function of the censoring. On the other hand, \code{"unif"}
 #' corresponds to \eqn{W_i = 1} for all i.
 #'
 #' Since the IPC weights may take too large values in some situation, \code{max_w_ev} allows
@@ -161,18 +161,18 @@
 #'
 #'
 #' \item \code{"concordance"} : The concordance is a classical measure of performance when modelling
-#' censored variables. It indicates if the order of the pred values of the model is similar to
+#' censored variables. It indicates if the order of the predicted values of the model is similar to
 #' the order of the observed values. The concordance generalizes the Kendall tau to the censored case.
 #'
 #'
 #' \item \code{"group"} : This is an experimental criteria that we didn't mention in [Gerb. et al.]. Here,
 #' the idea to take the censoring into account is to measure errors given groups of observations and
-#' not single observations. First, the test sample is ordered w.r.t. the pred values of the
+#' not single observations. First, the test sample is ordered w.r.t. the predicted values of the
 #' model. Second, respecting this order the test sample is splited into groups of size \code{v_bandwidht[1]}, or
 #' \code{v_bandwidht[2]}, etc ... (each bandwidth in \code{v_bandwidht} corresponds to a different
 #' score \code{"group"}).
 #'
-#' Then, inside a group, an estimator of the surv function of \eqn{T} may be obtained by
+#' Then, inside a group, an estimator of the survival function of \eqn{T} may be obtained by
 #' Kaplan Meier, and we can deduce an estimator of \code{phi}\eqn{(T)} by integration. This estimator
 #' of \code{phi}\eqn{(T)} may be
 #' viewed as an "empirical" value of \code{phi}\eqn{(T)} inside the group.
@@ -207,7 +207,7 @@
 #' as those used for training to compute predictions in terminal leafs (\emph{wRF2} in
 #' [Gerb. et al.]). The second prediction is output as \code{pred_train/test_KMloc}
 #' and it makes terminal leafs estimation by using Kaplan Meier to estimate
-#' the within leaf surv function of \eqn{T}.
+#' the within leaf survival function of \eqn{T}.
 #' This mode internally calls the \code{\link[rpart]{rpart}} function.
 #' }
 #'
@@ -228,11 +228,11 @@
 #'
 #' @return A list with the following elements :
 #'
-#' \item{pred_train}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred_train}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of the train set.
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{pred_test}{The vector of the pred values for
+#' \item{pred_test}{The vector of the predicted values for
 #' \code{phi}\eqn{(T')} for the observations of the test set (require \code{test} != \code{NULL}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
@@ -280,11 +280,11 @@
 #' \item{cens_rate}{The real number giving the rate of censoring
 #' of \eqn{T'}, computed on the concatenation of \code{train} and \code{test}}
 #'
-#' \item{pred_train_KMloc}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred_train_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' for the observations of the train set (require \code{mode_sw_RF = 2}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{pred_test_KMloc}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred_test_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' for the observations of the test set (require \code{mode_sw_RF = 2}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
@@ -296,16 +296,16 @@
 #' set (require \code{mode_sw_RF = 2}).
 #' See \emph{Details - Random Forest modes} for more information}
 #'
-#' \item{surv_train_KMloc}{The matrix which contains the estimated values of the surv
+#' \item{surv_train_KMloc}{The matrix which contains the estimated values of the survival
 #' curves at \code{time_points} (within leaf Kapaln Meier estimator),
 #' for the observations of the train set (require \code{mode_sw_RF = 2})}
 #'
-#' \item{surv_test_KMloc}{The matrix which contains the estimated values of the surv
+#' \item{surv_test_KMloc}{The matrix which contains the estimated values of the survival
 #' curves at \code{time_points} (within leaf Kapaln Meier estimator),
 #' for the observations of the test set
 #' (require \code{mode_sw_RF = 2})}
 #'
-#' \item{time_points}{The vector of the time points where the surv curves
+#' \item{time_points}{The vector of the time points where the survival curves
 #' are evaluated (require \code{mode_sw_RF = 2})}
 #'
 #' \item{train}{The data.frame of the train data provided as arguments, plus columns :
@@ -340,14 +340,14 @@
 #' \code{\link{predict_sw_reg}}
 #'
 #' @export
-#' @import methods surv
+#' @import methods survival
 #'
 #' @examples
 #'
 #' # ------------------------------------------------
 #' #   Load "transplant" data
 #' # ------------------------------------------------
-#' data("transplant", package = "surv")
+#' data("transplant", package = "survival")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
 #'
@@ -355,8 +355,8 @@
 #' apply(transplant, MARGIN = 2, FUN = function(x){sum(is.na(x))})
 #' transplant_bis = transplant[stats::complete.cases(transplant),]
 #'
-#' # plot the surv curve of transplant data
-#' KM_transplant = survfit(formula = surv::Surv(time = futime, event = delta) ~ 1,
+#' # plot the survival curve of transplant data
+#' KM_transplant = survfit(formula = survival::Surv(time = futime, event = delta) ~ 1,
 #'                         data = transplant_bis)
 #' plot(KM_transplant)
 #'
@@ -811,17 +811,17 @@ sw_reg = function(y_var,
 #' @param newdata A data.frame which contains the same variables as the ones
 #' used for the training
 #' @return A list with the following elements :
-#' \item{pred}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
-#' \item{pred_KMloc}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred_KMloc}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' for the observations of newdata with inner Kapaln Meier weights
 #' (require \code{obj} to be trained with
 #' \code{mode_w_rf = 2}).
 #' See \code{\link{sw_reg}} for more information}
-#' \item{surv_KMloc}{The matrix which contains the estimated values of the surv curves at
+#' \item{surv_KMloc}{The matrix which contains the estimated values of the survival curves at
 #' \code{time_points} with inner Kapaln Meier weights,
 #' for the observations of \code{newdata} (require \code{mode_sw_RF = 2})}
-#' \item{time_points}{The vector of the time points where the surv curves
+#' \item{time_points}{The vector of the time points where the survival curves
 #' are evaluated (require \code{mode_sw_RF = 2})}
 #'
 #'
@@ -834,7 +834,7 @@ sw_reg = function(y_var,
 #' # ------------------------------------------------
 #' #   Load "transplant" data
 #' # ------------------------------------------------
-#' data("transplant", package = "surv")
+#' data("transplant", package = "survival")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
 #'
@@ -873,7 +873,7 @@ predict_sw_reg = function(obj, newdata){
   }
 
   if (!is.null(obj$sw_RF_obj)){
-    predictions = randomForestSRC::predict.rfsrc(obj$sw_RF_obj, newdata[,obj$x_vars])$pred
+    predictions = randomForestSRC::predict.rfsrc(obj$sw_RF_obj, newdata[,obj$x_vars])$predicted
     return(list(pred = as.vector(predictions)))
   }
   if (!is.null(obj$sw_gam_obj)){
@@ -891,7 +891,7 @@ predict_sw_reg = function(obj, newdata){
 
     return(list(pred = res_predictions$pred,
                 pred_KMloc = res_predictions_KMloc$pred_KMloc,
-                surv_KMloc = res_predictions_KMloc$preds_surv_KMloc,
+                surv_KMloc = res_predictions_KMloc$pred_surv_KMloc,
                 time_points = res_predictions_KMloc$time))
   }
 }
@@ -939,7 +939,7 @@ make_res_weighted_regression = function(y_var,
                                       ...)
 
       overfitted_predictions = randomForestSRC::predict.rfsrc(RF_fit,
-                                                              train[,x_vars])$pred
+                                                              train[,x_vars])$predicted
     }
     if (mode_sw_RF == 2){
       rpartRF_fit = rpartRF(data = train,
@@ -1016,7 +1016,7 @@ make_res_weighted_regression = function(y_var,
     if (type_reg == "RF"){
       if (mode_sw_RF == 1){
         test_predictions = randomForestSRC::predict.rfsrc(RF_fit,
-                                                          test[,x_vars])$pred
+                                                          test[,x_vars])$predicted
       }
       if (mode_sw_RF == 2){
 
@@ -1098,7 +1098,7 @@ make_res_weighted_regression = function(y_var,
   if ((type_reg == "RF") & (mode_sw_RF == 2)){
     result$perf_train_KMloc = perf_train_KMloc
     result$time_points = res_overfitted_predictions_KMloc$time
-    result$surv_train_KMloc = res_overfitted_predictions_KMloc$preds_surv_KMloc
+    result$surv_train_KMloc = res_overfitted_predictions_KMloc$pred_surv_KMloc
     result$pred_train_KMloc = overfitted_predictions_KMloc
   }
   if (!is.null(test)){
@@ -1108,7 +1108,7 @@ make_res_weighted_regression = function(y_var,
     result$mat_w_test = mat_w_test
     if ((type_reg == "RF") & (mode_sw_RF == 2)){
       result$perf_test_KMloc = perf_test_KMloc
-      result$surv_test_KMloc = res_test_predictions_KMloc$preds_surv_KMloc
+      result$surv_test_KMloc = res_test_predictions_KMloc$pred_surv_KMloc
       result$pred_test_KMloc = test_predictions_KMloc
     }
   }
@@ -1178,7 +1178,7 @@ rpartRF = function(data,
     nelson_allen_estimates = do.call(rbind,
                                      args = lapply(X = unique(pred_nodes),
                                                    FUN = function(node){
-                                                     fit = surv::survfit(formula = stats::as.formula(paste0("Surv(time = ", y_var,", event = ",  delta_var, ") ~ 1")),
+                                                     fit = survival::survfit(formula = stats::as.formula(paste0("Surv(time = ", y_var,", event = ",  delta_var, ") ~ 1")),
                                                                              data = d_train[pred_nodes == node, ])
                                                      nelson_allen = cumsum(fit$n.event/fit$n.risk)
                                                      return(
@@ -1241,11 +1241,11 @@ predict_rpartRF = function(obj, newdata, type){
     #                                       }))
     # Sys.time() - t1
 
-    preds_surv_KMloc = exp(-mean_nelson_allen_estimates)
+    pred_surv_KMloc = exp(-mean_nelson_allen_estimates)
 
     pred_KMloc =
-      (preds_surv_KMloc[, which(obj$list_models[[1]]$time < obj$max_time)] -
-         cbind(preds_surv_KMloc[, which(obj$list_models[[1]]$time < obj$max_time)[-1] ], 0)) %*%
+      (pred_surv_KMloc[, which(obj$list_models[[1]]$time < obj$max_time)] -
+         cbind(pred_surv_KMloc[, which(obj$list_models[[1]]$time < obj$max_time)[-1] ], 0)) %*%
       sapply(X = 1:length(c(obj$list_models[[1]]$time[which(obj$list_models[[1]]$time < obj$max_time)[-1]], obj$max_time)),
              FUN = function(i){do.call(obj$phi,
                                        c(list(x=c(obj$list_models[[1]]$time[which(obj$list_models[[1]]$time < obj$max_time)[-1]],
@@ -1254,7 +1254,7 @@ predict_rpartRF = function(obj, newdata, type){
 
 
     return(list(time = obj$list_models[[1]]$time,
-                preds_surv_KMloc = exp(-mean_nelson_allen_estimates),
+                pred_surv_KMloc = exp(-mean_nelson_allen_estimates),
                 pred_KMloc = as.vector(pred_KMloc)))
   }
 }

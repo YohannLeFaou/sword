@@ -5,7 +5,7 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
                                     bandwidth = NULL){
   # this function computes the aggregated criteria for assessing performances of a model
   # parameters :
-  ## model_predictions (vector) : pred values of the model
+  ## model_predictions (vector) : predicted values of the model
   ## data : dataset with corresponding observations
   ## delta_name : name of the "delta" variable in the dataset "data"
   ## y_name : name of the "y" variable in the datasent "data"
@@ -31,7 +31,7 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
       if (sum(data[data$group == i,delta_name]) > 0){ # if it exists non censored observations in the group
 
         # empirical phi inside the group (KM estimate)
-        a = surv::survfit(formula = formula,
+        a = survival::survfit(formula = formula,
                               data = data[data$group == i,])
         phi_by_group[i] = - sum( diff(c(1,a$surv[which(a$time < max_time)],0)) *
                                    sapply(X = 1:length(c(a$time[which(a$time < max_time)], max_time)),
@@ -86,12 +86,12 @@ SumModelGini <- function(solutions, predictions, weights){
 #' @title Compute a Gini goodness of fit statistic
 #'
 #' @description Given a vector of observed values \code{solutions} and a vector
-#' of pred values \code{predictions}, the Gini index
-#' measures how well the order of the pred values corresponds
+#' of predicted values \code{predictions}, the Gini index
+#' measures how well the order of the predicted values corresponds
 #' to the order of the observed values.
 #'
 #' @param solutions A vector of observed values
-#' @param predictions A vector of pred values
+#' @param predictions A vector of predicted values
 #' @param weights A vector of weights for the single observations (défault = \code{NULL}).
 #' If \code{NULL}, then weights are taken as equal to 1
 #'
@@ -132,7 +132,7 @@ SumModelGini <- function(solutions, predictions, weights){
 NormalizedGini <- function(solutions, predictions, weights = NULL) {
   # function which computes the Gini index of performance of a model
   # solutions : vector of true values
-  # predictions : vector of pred values
+  # predictions : vector of predicted values
 
   if(is.null(weights)){weights = rep(1, length(solutions))}
   SumModelGini(solutions, predictions, weights) / SumModelGini(solutions, solutions, weights)
@@ -175,7 +175,7 @@ eval_model = function(predictions,
   if("concordance" %in% ev_methods){
     formula = stats::as.formula(paste0("Surv(", phi_name, ",", delta_name, ") ~ predictions"))
     concordance =
-      1 - surv::survConcordance(formula = formula,
+      1 - survival::survConcordance(formula = formula,
                                     data = cbind(data[,c(phi_name, delta_name)],
                                                  predictions)
       )$concordance

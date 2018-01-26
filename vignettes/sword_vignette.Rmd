@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 `sword` is an experimental package which  provides a tool to generalise the use of the Random Forest algorithm and the Generalised Additive Model (GAM) model to the modeling of right censored data. Such models can be built very easily thanks to `sword`, and their performances can be compared with benchmark models.
 
-Technically, sword is a wrapper for statistical algorithms provided in the R packages randomForestSRC (random forest : *rfsrc*), rpart, surv and mgcv (*gam*).
+Technically, sword is a wrapper for statistical algorithms provided in the R packages randomForestSRC (random forest : *rfsrc*), rpart, survival and mgcv (*gam*).
 
 As `sword` is experimental, it is designed such that somebody interested in the method could test it and get results very fast on new data. However, `sword` is not numerically optimised and can not handle massive amount of data.
 
@@ -51,7 +51,7 @@ If we assume $(H)$ that $T$ and $C$ are independent conditinally on $X$, then we
 
 $$E\left[ W \cdot \psi(Y,X) \right] = E \left[\psi(T,X)\right] ,~~ \text{with} ~~ W = \frac{\Delta}{S_C(Y |X)}$$
 
-with $S_C(t ~| X = x)$ denoting the surv function of $C$ given that $X = x$, and $\psi$ a given function.
+with $S_C(t ~| X = x)$ denoting the survival function of $C$ given that $X = x$, and $\psi$ a given function.
 
 This equality shows that it is possible to estimate the distribution of $(T,X)$ from the available censored observations $(y_i, \delta_i, x_i)_{i=1,..,n}$. To do so, each observation $(y_i, x_i)$ is weighted as follow :
 
@@ -126,12 +126,12 @@ transplant_bis = transplant[complete.cases(transplant),]
 
 
 ```{r, fig.width=7, fig.height=4}
-# plot the surv curve of the waiting time until transplant
+# plot the survival curve of the waiting time until transplant
 KM = survfit(formula = Surv(time = futime, event = delta) ~ 1,
                         data = transplant_bis)
 plot(KM, 
      main = "Survival Curve of the waiting time before liver transplant", 
-     ylab = "surv prob.", xlab = "time (days)")
+     ylab = "survival prob.", xlab = "time (days)")
 ```
 
 
@@ -302,7 +302,7 @@ print(res2$perf_test_KMloc)
 
 ### weighted GAM model
 
-The `sw_reg` may also be used to fit Generalized Additive Model (GAM) on surv data by specifying `type_reg = "gam"` in the function call. Here, we train a GLM model with *binomial* distribution and link *logit* on the data :
+The `sw_reg` may also be used to fit Generalized Additive Model (GAM) on survival data by specifying `type_reg = "gam"` in the function call. Here, we train a GLM model with *binomial* distribution and link *logit* on the data :
 
 ```{r}
 res2 = sw_reg(y_var = "futime", 
@@ -367,7 +367,7 @@ For the *mgcv::gam* function, no additionnal parameter figure in the list of the
 
 ## Comparison with benchmark models
 
-The two benchmark models we use are derived from 2 classical algorithms to study surv data : the Cox model and the random surv forest algorithm. In both cases, the surv model is used to build a model to estimate the conditionnal surv functions $S_T(\cdot,X = x)$ : let $\hat{S} _T(\cdot,X = x)$ the estimates. Then, the prediction for $E[\phi(T)|X=x]$ is estimated with the formula
+The two benchmark models we use are derived from 2 classical algorithms to study survival data : the Cox model and the random survival forest algorithm. In both cases, the survival model is used to build a model to estimate the conditionnal survival functions $S_T(\cdot,X = x)$ : let $\hat{S} _T(\cdot,X = x)$ the estimates. Then, the prediction for $E[\phi(T)|X=x]$ is estimated with the formula
 
 $$
 \hat{\phi} = - \int_{s=0}^{\text{max\_time}} \phi(s) d\hat{S}_T(\cdot,X = x)
@@ -386,7 +386,7 @@ res2 = rsf_reg(y_var = "futime",
                       types_w_ev = c("KM", "Cox", "RSF", "unif"))
 ```
 
-For the first 10 observations of the test set, we draw the pred surv curves :
+For the first 10 observations of the test set, we draw the predicted survival curves :
 
 ```
 dpi=300
@@ -400,9 +400,9 @@ ggplot(data = data_surv_test,
   ggtitle("Prédiction des courbes de survie des 10 premiers individus test (RSF)")
 ```
 
-Observe that we don't estimate the surv curves beyond `max_time`, since these estimates would be useless.
+Observe that we don't estimate the survival curves beyond `max_time`, since these estimates would be useless.
 
-These surv curves correspond to the following predictions in terms of $\phi$ ($\phi(t) = 1_{t > 365}$):
+These survival curves correspond to the following predictions in terms of $\phi$ ($\phi(t) = 1_{t > 365}$):
 
 ```{r}
 res2$pred_test[1:10]
@@ -464,4 +464,4 @@ print(R2)
 
 # Conclusion
 
-In this document, we have presented the package `sword` which aims to provide an implementation of the weighted regression algorihtm for surv data, that we have studied in the article [??]. To illustrate the fonctionalities of the package, we have explored the `transplant` data and we have applied the methods provided in `sword` to answer the problem of the estimation of the probabilty that a patient remain in the waiting list for liver transplant one year after entering the list.
+In this document, we have presented the package `sword` which aims to provide an implementation of the weighted regression algorihtm for survival data, that we have studied in the article [??]. To illustrate the fonctionalities of the package, we have explored the `transplant` data and we have applied the methods provided in `sword` to answer the problem of the estimation of the probabilty that a patient remain in the waiting list for liver transplant one year after entering the list.

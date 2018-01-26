@@ -8,7 +8,7 @@
 # ------------------------------------------------
 #   Load "transplant" data
 # ------------------------------------------------
-data("transplant", package = "surv")
+data("transplant", package = "survival")
 transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 # which indicate censoring/non censoring
 
@@ -16,8 +16,8 @@ transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 apply(transplant, MARGIN = 2, FUN = function(x){sum(is.na(x))})
 transplant_bis = transplant[stats::complete.cases(transplant),]
 
-# plot the surv curve of transplant data
-KM_transplant = survfit(formula = surv::Surv(time = futime, event = delta) ~ 1,
+# plot the survival curve of transplant data
+KM_transplant = survfit(formula = survival::Surv(time = futime, event = delta) ~ 1,
                                   data = transplant_bis)
 plot(KM_transplant)
 
@@ -120,7 +120,7 @@ print(res4$pred_test[1:30])
 #
 # ------------------------------------------------------------------------------------
 
-data("transplant", package = "surv")
+data("transplant", package = "survival")
 transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 # which indicate censoring/non censoring
 

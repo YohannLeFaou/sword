@@ -4,9 +4,9 @@
 #' @description \code{rsf_reg} is a benchmark model we use in [Gerb. et al.] (see §?).
 #' To model the variable \code{phi}\eqn{(T)}, where \eqn{T} is a right censored time and
 #' \code{phi} is a given function, we first
-#' fit a RSF model to the data to estimate the surv function of \eqn{T} given the covariates. Then,
+#' fit a RSF model to the data to estimate the survival function of \eqn{T} given the covariates. Then,
 #' we deduce an estimator of \code{phi}\eqn{(T)} by integration of the function \code{phi} with respect
-#' to the estimated surv function. Different methods are available to assess the quality of fit of
+#' to the estimated survival function. Different methods are available to assess the quality of fit of
 #' \code{rsf_reg}. \code{rsf_reg} is a wrapper for the \code{\link[randomForestSRC]{rfsrc}}
 #' function\cr \cr
 #' The notations we use are :
@@ -84,7 +84,7 @@
 #' To be used only in the context of simulated data where full about is available.
 #'
 #' @param ... Additional parameter that may be pass to the \code{\link[randomForestSRC]{rfsrc}}
-#' function (package \emph{surv})
+#' function (package \emph{randomForestSRC})
 #'
 #'
 #' @details
@@ -103,7 +103,7 @@
 #'
 #' The \code{types_w_ev} argument allows the use of four kinds of IPC weights :
 #' \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. The first three types of weights correspond
-#' to different ways to estimate the surv function of the censoring. On the other hand, \code{"unif"}
+#' to different ways to estimate the survival function of the censoring. On the other hand, \code{"unif"}
 #' corresponds to \eqn{W_i = 1} for all i.
 #'
 #' Since the IPC weights may take too large values in some situation, \code{max_w_ev} allows
@@ -120,18 +120,18 @@
 #'
 #'
 #' \item \code{"concordance"} : The concordance is a classical measure of performance when modelling
-#' censored variables. It indicates if the order of the pred values of the model is similar to
+#' censored variables. It indicates if the order of the predicted values of the model is similar to
 #' the order of the observed values. The concordance generalizes the Kendall tau to the censored case.
 #'
 #'
 #' \item \code{"group"} : This is an experimental criteria that we didn't mention in [Gerb. et al.]. Here,
 #' the idea to take the censoring into account is to measure errors given groups of observations and
-#' not single observations. First, the test sample is ordered w.r.t. the pred values of the
+#' not single observations. First, the test sample is ordered w.r.t. the predicted values of the
 #' model. Second, respecting this order the test sample is splited into groups of size \code{v_bandwidht[1]}, or
 #' \code{v_bandwidht[2]}, etc ... (each bandwidth in \code{v_bandwidht} corresponds to a different
 #' score \code{"group"}).
 #'
-#' Then, inside a group, an estimator of the surv function of \eqn{T} may be obtained by
+#' Then, inside a group, an estimator of the survival function of \eqn{T} may be obtained by
 #' Kaplan Meier, and we can deduce an estimator of \code{phi}\eqn{(T)} by integration. This estimator
 #' of \code{phi}\eqn{(T)} may be
 #' viewed as an "empirical" value of \code{phi}\eqn{(T)} inside the group.
@@ -150,19 +150,19 @@
 #' }
 #'
 #' @return A list with the following elements :
-#' \item{pred_train}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred_train}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of the train set}
-#' \item{pred_test}{The vector of the pred values for
+#' \item{pred_test}{The vector of the predicted values for
 #' \code{phi}\eqn{(T')} for the observations of the test set (require \code{test} != \code{NULL})}
 #' \item{perf_train}{The list with the values for the evaluation criteria computed on the train
 #' set}
 #' \item{perf_test}{The list with the values for the evaluation criteria computed on the test
 #' set (require \code{test} != \code{NULL}))}
-#' \item{surv_train}{The matrix which contains the estimated values of the surv curves at
+#' \item{surv_train}{The matrix which contains the estimated values of the survival curves at
 #' \code{time_points} (with the Cox model), for the observations of the train set}
-#' \item{surv_test}{The matrix which contains the estimated values of the surv curves at
+#' \item{surv_test}{The matrix which contains the estimated values of the survival curves at
 #' \code{time_points}, for the observations of the test set (require \code{test} != \code{NULL})}
-#' \item{time_points}{The vector of the time points where the surv curves are evaluated}
+#' \item{time_points}{The vector of the time points where the survival curves are evaluated}
 #'
 #' \item{mat_w_train}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the train set}
@@ -211,7 +211,7 @@
 #' # ------------------------------------------------
 #' #   Load "transplant" data
 #' # ------------------------------------------------
-#' data("transplant", package = "surv")
+#' data("transplant", package = "survival")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
 #'
@@ -219,8 +219,8 @@
 #' apply(transplant, MARGIN = 2, FUN = function(x){sum(is.na(x))})
 #' transplant_bis = transplant[stats::complete.cases(transplant),]
 #'
-#' # plot the surv curve of transplant data
-#' KM_transplant = survfit(formula = surv::Surv(time = futime, event = delta) ~ 1,
+#' # plot the survival curve of transplant data
+#' KM_transplant = survfit(formula = survival::Surv(time = futime, event = delta) ~ 1,
 #'                         data = transplant_bis)
 #' plot(KM_transplant)
 #'
@@ -235,7 +235,7 @@
 #'                       train = transplant_bis,
 #'                       types_w_ev = c("KM", "Cox", "RSF", "unif"))
 #'
-#' # by default, (main) parameters used for the random surv forest are :
+#' # by default, (main) parameters used for the random survival forest are :
 #' print(res1$rsf_obj$mtry)
 #' print(res1$rsf_obj$nodesize)
 #' print(res1$rsf_obj$nodedepth) # "-1" = no depth limitation
@@ -245,7 +245,7 @@
 #' print(res1$perf_train)
 #'
 #' print(res1$max_time) # by default \code{max_time} is set to 2055 which is very large
-#' # given the outlook of the surv function of \eqn{T}. Train errors may be
+#' # given the outlook of the survival function of \eqn{T}. Train errors may be
 #' # overfitted
 #'
 #' # ------------------------------------------------
@@ -498,8 +498,8 @@ rsf_reg = function(y_var,
                                  ...)
 
   overfitted_predictions_direct_RSF =
-    (cbind(1, rfSRC$surv[,which(rfSRC$time.interest < max_time)]) -
-       cbind(rfSRC$surv[,which(rfSRC$time.interest < max_time)],0)) %*%
+    (cbind(1, rfSRC$survival[,which(rfSRC$time.interest < max_time)]) -
+       cbind(rfSRC$survival[,which(rfSRC$time.interest < max_time)],0)) %*%
     sapply(X = 1:length(c(rfSRC$time.interest[which(rfSRC$time.interest < max_time)], max_time)),
            FUN = function(i){do.call(phi,
                                      c(list(x=c(rfSRC$time.interest[which(rfSRC$time.interest < max_time)], max_time)[i]),
@@ -523,7 +523,7 @@ rsf_reg = function(y_var,
 
     # Predictions on test set
     test_predictions_surv_curves_direct_RSF =
-      randomForestSRC::predict.rfsrc(rfSRC, test[,x_vars])$surv
+      randomForestSRC::predict.rfsrc(rfSRC, test[,x_vars])$survival
 
     test_predictions_direct_RSF =
       ( cbind(1,test_predictions_surv_curves_direct_RSF[,which(rfSRC$time.interest < max_time)]) -
@@ -570,7 +570,7 @@ rsf_reg = function(y_var,
   }
   if (rsf_obj){
     result$rsf_obj = rfSRC
-    result$surv_train = cbind(1,rfSRC$surv[,which(rfSRC$time.interest < max_time)], 0)
+    result$surv_train = cbind(1,rfSRC$survival[,which(rfSRC$time.interest < max_time)], 0)
     result$time_points = c(0,rfSRC$time.interest[which(rfSRC$time.interest < max_time)], max_time)
     if (!is.null(test)){
       result$surv_test =
@@ -591,11 +591,11 @@ rsf_reg = function(y_var,
 #' @param newdata A data.frame which contains the same variables as the ones
 #' used for the training
 #' @return A list with the following elements :
-#' \item{pred}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
-#' \item{surv}{The matrix which contains the estimated values of the surv curves at
+#' \item{surv}{The matrix which contains the estimated values of the survival curves at
 #' \code{time_points}, for the observations of \code{newdata}}
-#' \item{time_points}{The vector of the time points where the surv curves
+#' \item{time_points}{The vector of the time points where the survival curves
 #' are evaluated}
 #'
 #' @seealso \code{\link{rsf_reg}}
@@ -604,7 +604,7 @@ rsf_reg = function(y_var,
 #'
 #' @examples
 #'
-#' data("transplant", package = "surv")
+#' data("transplant", package = "survival")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
 #'
@@ -638,9 +638,9 @@ predict_rsf_reg = function(obj, newdata){
 
   predictions_surv_curves =
     randomForestSRC::predict.rfsrc(obj$rsf_obj,
-                                   newdata[,obj$x_vars])$surv
+                                   newdata[,obj$x_vars])$survival
 
-  # compute pred values for phi
+  # compute predicted values for phi
   predictions =
     ( cbind(1,predictions_surv_curves[,which(obj[["rsf_obj"]][["time.interest"]] < obj$max_time)]) -
         cbind(predictions_surv_curves[,which(obj[["rsf_obj"]][["time.interest"]] < obj$max_time)],0) ) %*%

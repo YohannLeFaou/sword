@@ -8,7 +8,7 @@
 # ------------------------------------------------
 #   Load "transplant" data
 # ------------------------------------------------
-data("transplant", package = "surv")
+data("transplant", package = "survival")
 transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 # which indicate censoring/non censoring
 
@@ -16,8 +16,8 @@ transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 apply(transplant, MARGIN = 2, FUN = function(x){sum(is.na(x))})
 transplant_bis = transplant[stats::complete.cases(transplant),]
 
-# plot the surv curve of transplant data
-KM_transplant = survfit(formula = surv::Surv(time = futime, event = delta) ~ 1,
+# plot the survival curve of transplant data
+KM_transplant = survfit(formula = survival::Surv(time = futime, event = delta) ~ 1,
                         data = transplant_bis)
 plot(KM_transplant)
 
@@ -32,7 +32,7 @@ res1 = rsf_reg(y_var = "futime",
                       train = transplant_bis,
                       types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
-# by default, (main) parameters used for the random surv forest are :
+# by default, (main) parameters used for the random survival forest are :
 print(res1$rsf_obj$mtry)
 print(res1$rsf_obj$nodesize)
 print(res1$rsf_obj$nodedepth) # "-1" = no depth limitation
@@ -42,7 +42,7 @@ matplot(y = t(res1$surv_train[1:30,]), x = res1$time_points, type = "l")
 print(res1$perf_train)
 
 print(res1$max_time) # by default \code{max_time} is set to 2055 which is very large
-# given the outlook of the surv function of \eqn{T}. Train errors may be
+# given the outlook of the survival function of \eqn{T}. Train errors may be
 # overfitted
 
 # ------------------------------------------------
@@ -143,7 +143,7 @@ print(res5$pred_test[1:30])
 #
 # ------------------------------------------------------------------------------------
 
-data("transplant", package = "surv")
+data("transplant", package = "survival")
 transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 # which indicate censoring/non censoring
 

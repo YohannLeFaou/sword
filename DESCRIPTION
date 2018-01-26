@@ -1,6 +1,6 @@
 Package: sword
 Type: Package
-Title: Random forest with IPC weights for surv analysis
+Title: Random forest with IPC weights for survival analysis
 Version: 0.1.0
 Authors@R: person("Yohann", "Le Faou", 
     email = "yohannlefa@gmail.com", 
@@ -24,7 +24,7 @@ Imports:
     rpart (>= 4.1-11),
     stats (>= 3.4)
 Depends:
-    R (>= 3.4), methods, surv (>= 2.41-3), graphics (>= 3.4)
+    R (>= 3.4), methods, survival (>= 2.41-3), graphics (>= 3.4)
 RoxygenNote: 6.0.1
 Suggests: knitr,
     rmarkdown

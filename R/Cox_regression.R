@@ -3,11 +3,11 @@
 #'
 #' @description \code{cox_reg} is a benchmark model we use in [Gerb. et al.] (see §?). To model the
 #' variable \code{phi}\eqn{(T)}, where \eqn{T} is a right censored time and \code{phi} is a given function, we first
-#' fit a Cox model to the data to estimate the surv function of \eqn{T} given the covariates. Then,
+#' fit a Cox model to the data to estimate the survival function of \eqn{T} given the covariates. Then,
 #' we deduce an estimator of \code{phi}\eqn{(T)} by integration of the function \code{phi} with respect
 #' to the
-#' estimated surv function. Different methods are available to assess the quality of fit of
-#' \code{cox_reg}. \code{cox_reg} is a wrapper for the \code{\link[surv]{coxph}}
+#' estimated survival function. Different methods are available to assess the quality of fit of
+#' \code{cox_reg}. \code{cox_reg} is a wrapper for the \code{\link[survival]{coxph}}
 #' function\cr \cr
 #' The notations we use are :
 #' \itemize{
@@ -56,8 +56,8 @@
 #' for the provided weights (by default names will be "w1", "w2", ...)
 #' @param y_no_cens_var A character string which gives the name of the non censored \code{y_var} (default = NULL).
 #' To be used only in the context of simulated data where full about is available.
-#' @param ... Additional parameter that may be pass to the \code{\link[surv]{coxph}}
-#' function (package \emph{surv})
+#' @param ... Additional parameter that may be pass to the \code{\link[survival]{coxph}}
+#' function (package \emph{survival})
 #'
 #'
 #' @details
@@ -76,7 +76,7 @@
 #'
 #' The \code{types_w_ev} argument allows the use of four kinds of IPC weights :
 #' \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. The first three types of weights correspond
-#' to different ways to estimate the surv function of the censoring. On the other hand, \code{"unif"}
+#' to different ways to estimate the survival function of the censoring. On the other hand, \code{"unif"}
 #' corresponds to \eqn{W_i = 1} for all i.
 #'
 #' Since the IPC weights may take too large values in some situation, \code{max_w_ev} allows
@@ -93,18 +93,18 @@
 #'
 #'
 #' \item \code{"concordance"} : The concordance is a classical measure of performance when modelling
-#' censored variables. It indicates if the order of the pred values of the model is similar to
+#' censored variables. It indicates if the order of the predicted values of the model is similar to
 #' the order of the observed values. The concordance generalizes the Kendall tau to the censored case.
 #'
 #'
 #' \item \code{"group"} : This is an experimental criteria that we didn't mention in [Gerb. et al.]. Here,
 #' the idea to take the censoring into account is to measure errors given groups of observations and
-#' not single observations. First, the test sample is ordered w.r.t. the pred values of the
+#' not single observations. First, the test sample is ordered w.r.t. the predicted values of the
 #' model. Second, respecting this order the test sample is splited into groups of size \code{v_bandwidht[1]}, or
 #' \code{v_bandwidht[2]}, etc ... (each bandwidth in \code{v_bandwidht} corresponds to a different
 #' score \code{"group"}).
 #'
-#' Then, inside a group, an estimator of the surv function of \eqn{T} may be obtained by
+#' Then, inside a group, an estimator of the survival function of \eqn{T} may be obtained by
 #' Kaplan Meier, and we can deduce an estimator of \code{phi}\eqn{(T)} by integration. This estimator
 #' of \code{phi}\eqn{(T)} may be
 #' viewed as an "empirical" value of \code{phi}\eqn{(T)} inside the group.
@@ -126,19 +126,19 @@
 #' }
 #'
 #' @return A list with the following elements :
-#' \item{pred_train}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred_train}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of the train set}
-#' \item{pred_test}{The vector of the pred values for
+#' \item{pred_test}{The vector of the predicted values for
 #' \code{phi}\eqn{(T')} for the observations of the test set (require \code{test} != \code{NULL})}
 #' \item{perf_train}{The list with the values for the evaluation criteria computed on the train
 #' set}
 #' \item{perf_test}{The list with the values for the evaluation criteria computed on the test
 #' set (require \code{test} != \code{NULL}))}
-#' \item{surv_train}{The matrix which contains the estimated values of the surv curves at
+#' \item{surv_train}{The matrix which contains the estimated values of the survival curves at
 #' \code{time_points} (with the Cox model), for the observations of the train set}
-#' \item{surv_test}{The matrix which contains the estimated values of the surv curves at
+#' \item{surv_test}{The matrix which contains the estimated values of the survival curves at
 #' \code{time_points}, for the observations of the test set (require \code{test} != \code{NULL})}
-#' \item{time_points}{The vector of the time points where the surv curves are evaluated}
+#' \item{time_points}{The vector of the time points where the survival curves are evaluated}
 #'
 #' \item{mat_w_train}{The matrix which contains the values of the weights used for the
 #' \code{"weighted"} criteria, for the observations of the train set}
@@ -178,7 +178,7 @@
 #'
 #' @references [Gerb. et al.] to be published
 #'
-#' @seealso \code{\link[surv]{coxph}}, \code{\link{predict_cox_reg}}, \url{http://rstudio.com}
+#' @seealso \code{\link[survival]{coxph}}, \code{\link{predict_cox_reg}}, \url{http://rstudio.com}
 #' (only here for the example)
 #'
 #' @export
@@ -188,7 +188,7 @@
 #' # ------------------------------------------------
 #' #   Load "transplant" data
 #' # ------------------------------------------------
-#' data("transplant", package = "surv")
+#' data("transplant", package = "survival")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
 #'
@@ -196,8 +196,8 @@
 #' apply(transplant, MARGIN = 2, FUN = function(x){sum(is.na(x))})
 #' transplant_bis = transplant[stats::complete.cases(transplant),]
 #'
-#' # plot the surv curve of transplant data
-#' KM_transplant = survfit(formula = surv::Surv(time = futime, event = delta) ~ 1,
+#' # plot the survival curve of transplant data
+#' KM_transplant = survfit(formula = survival::Surv(time = futime, event = delta) ~ 1,
 #'                                   data = transplant_bis)
 #' plot(KM_transplant)
 #'
@@ -429,11 +429,11 @@ cox_reg = function(y_var,
 
   # Calibration of the Cox model
   formula = stats::as.formula(paste0("Surv(", y_var, ",", delta_var,") ~ ."))
-  Cox = surv::coxph(formula = formula,
+  Cox = survival::coxph(formula = formula,
                         data = train[,c(y_var, delta_var, x_vars)],
                         ...)
 
-  baseline_cox = surv::basehaz(Cox)
+  baseline_cox = survival::basehaz(Cox)
   approx_ref_surv = stats::approx(x = c(0,baseline_cox$time),
                            y = c(1,exp( - baseline_cox$hazard)),
                            xout = seq(from = 0,to = max_time * 0.99,length.out = 100),
@@ -542,11 +542,11 @@ cox_reg = function(y_var,
 #' @param newdata A data.frame which contains the same variables as the ones
 #' used for the training
 #' @return A list with the following elements :
-#' \item{pred}{The vector of the pred values for \code{phi}\eqn{(T')}
+#' \item{pred}{The vector of the predicted values for \code{phi}\eqn{(T')}
 #' (with \eqn{T' = min(T, } \code{max_time}\eqn{)}) for the observations of \code{newdata}}
-#' \item{surv}{The matrix which contains the estimated values of the surv curves at
+#' \item{surv}{The matrix which contains the estimated values of the survival curves at
 #' \code{time_points}, for the observations of \code{newdata}}
-#' \item{time_points}{The vector of the time points where the surv curves
+#' \item{time_points}{The vector of the time points where the survival curves
 #' are evaluated}
 #'
 #' @seealso \code{\link{cox_reg}}
@@ -554,7 +554,7 @@ cox_reg = function(y_var,
 #' @export
 #'
 #' @examples
-#' data("transplant", package = "surv")
+#' data("transplant", package = "survival")
 #' transplant$delta = 1 * (transplant$event == "ltx") # create binary var
 #' # which indicate censoring/non censoring
 #'
@@ -589,7 +589,7 @@ predict_cox_reg = function(obj, newdata){
          you shoud specify cox_obj = TRUE in the call of cox_reg")
   }
 
-  baseline_cox = surv::basehaz(obj$cox_obj)
+  baseline_cox = survival::basehaz(obj$cox_obj)
   approx_ref_surv = stats::approx(x = c(0,baseline_cox$time),
                            y = c(1,exp( - baseline_cox$hazard)),
                            xout = seq(from = 0,to = obj$max_time * 0.99,length.out = 100),
