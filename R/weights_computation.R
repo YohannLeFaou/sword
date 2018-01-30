@@ -93,7 +93,7 @@ make_weights = function(data,
                                     vect_delta = data[,delta_name])
       weights = res_KM_weights$weights
       if (cens_mod_obj){
-        list_result$cens_mod_obj = res_KM_weights$censoring_survfit
+        list_result$cens_mod_object = res_KM_weights$censoring_survfit
       }
     }
   }
@@ -116,7 +116,7 @@ make_weights = function(data,
                     method = "linear",
                     rule = 2)$y)^(exp(cox_fit$linear.predictors)) , 1/(max_ratio_weights * 1.5) )
     weights[data[,delta_name] == 0] = 0
-    if(cens_mod_obj){list_result$cens_mod_obj = cox_fit}
+    if(cens_mod_obj){list_result$cens_mod_object = cox_fit}
   }
 
   if (type == "RSF"){
@@ -138,7 +138,7 @@ make_weights = function(data,
                                                 vect_delta = data[, delta_name],
                                                 mat_surv_curves_C = cbind(1, RSF_fit$survival.oob),
                                                 time_points = c(0, RSF_fit$time.interest))
-    if(cens_mod_obj){list_result$cens_mod_obj = RSF_fit}
+    if(cens_mod_obj){list_result$cens_mod_object = RSF_fit}
   }
   sum_w = sum(weights)
   n_weights_modif = sum(weights > (min(weights[weights > 0]) *  max_ratio_weights))

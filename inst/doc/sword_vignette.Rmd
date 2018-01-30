@@ -45,7 +45,7 @@ The packages `sword` answers the problem of the prediction of $\phi(T)$, providi
 
 ### Inverse Probability of Censoring Weighting (IPCW)
 
-The main function of `sword` is the function `weighted_regression_survival` : this function allows to fit random forest and GAM (Generalised additive model) models to a right censored variable, using Inverse Probability of Censoring Weighting (IPCW). The idea behind the IPCW method is that the non censored observations of $T$ : $(y_i)_{i \in \{i = 1,..n / \delta_i = 1\}}$, are biased downwards since they are realisations of the variable $T | T \le C$. But it is possible to compensate the bias induced by the censoring thanks to a correct weighting.
+The main function of `sword` is the function `sw_reg` : this function allows to fit random forest and GAM (Generalised additive model) models to a right censored variable, using Inverse Probability of Censoring Weighting (IPCW). The idea behind the IPCW method is that the non censored observations of $T$ : $(y_i)_{i \in \{i = 1,..n / \delta_i = 1\}}$, are biased downwards since they are realisations of the variable $T | T \le C$. But it is possible to compensate the bias induced by the censoring thanks to a correct weighting.
 
 If we assume $(H)$ that $T$ and $C$ are independent conditinally on $X$, then we can show that we have the following equality :
 
@@ -60,11 +60,11 @@ This equality shows that it is possible to estimate the distribution of $(T,X)$ 
 
 Remark: we have $S_C(t_i |X = x_i) = P(C > t_i | X = x_i)  \overset{(H)}{=} P(C > T | X = x_i, T = t_i)$. Then we observe that the quantity $S_C(t_i |X = x_i)$ corresponds to a probability of being non censored. Hence the name IPCW.
 
-By attributing weights $w_i$ to the observations, `weighted_regression_survival` generalises classical regression algorithms to the right censored case.
+By attributing weights $w_i$ to the observations, `sw_reg` generalises classical regression algorithms to the right censored case.
 
 ### Practical algorithms
 
-In practice, the function $S_C(\cdot |X = x)$ is unknown and so are the weights $w_i$. Then we should estimate $S_C(\cdot |X = x)$ in order to use the IPCW principle. There are 3 methods implemented in `weighted_regression_survival` to estimate $S_C(\cdot |X = x)$ (`type_weights` argument) :
+In practice, the function $S_C(\cdot |X = x)$ is unknown and so are the weights $w_i$. Then we should estimate $S_C(\cdot |X = x)$ in order to use the IPCW principle. There are 3 methods implemented in `sw_reg` to estimate $S_C(\cdot |X = x)$ (`type_w` argument) :
 
 - `"KM"` : Kaplan Meier estimator (it makes the stonger assumption that $(T,X)$ and $C$ are independent),
 - `"Cox"` : Cox model,
@@ -150,86 +150,86 @@ train = transplant_bis[train_lines,] # train set
 test = transplant_bis[-train_lines,] # test set
 ```
 
-In this special case the value of $\phi(T)$ is known as soon as $T$ reaches 366 days : we can set $T' = \text{min}(T, 366)$ and we have $\phi(T') = \phi(T)$. Then we can replace $\phi(T)$ by $\phi(T')$ ; the advantage is that $T' \le T$, then $T'$ is less censored than $T$ and we get more non censored observations, resulting in a more accurate estimation. This is the purpose of the `max_time` argument of the function `weighted_regression_survival` which allows to replace $T$ by $T'= min(T,$ `max_time`).
+In this special case the value of $\phi(T)$ is known as soon as $T$ reaches 366 days : we can set $T' = \text{min}(T, 366)$ and we have $\phi(T') = \phi(T)$. Then we can replace $\phi(T)$ by $\phi(T')$ ; the advantage is that $T' \le T$, then $T'$ is less censored than $T$ and we get more non censored observations, resulting in a more accurate estimation. This is the purpose of the `max_time` argument of the function `sw_reg` which allows to replace $T$ by $T'= min(T,$ `max_time`).
 
 ## Weighted Regression Survival
 
 ### Train a weighted random forest model
 
-By default, the `type_regression` argument of `weighted_regression_survival` takes the values `"RF"`, which means the regression algorithm used by the function is the random forest. The other possible value is `"gam"`. Then, the following command train a weighted random forest model on the transplant data :
+By default, the `type_reg` argument of `sw_reg` takes the values `"RF"`, which means the regression algorithm used by the function is the random forest. The other possible value is `"gam"`. Then, the following command train a weighted random forest model on the transplant data :
 
 ```{r}
-res1 = weighted_regression_survival(y_var = "futime", 
+res1 = sw_reg(y_var = "futime", 
                                     delta_var = "delta",
                                     x_vars = c("age", "sex", "abo", "year"),
-                                    data_train = train,
-                                    data_test = test,
-                                    type_weights = "KM",
+                                    train = train,
+                                    test = test,
+                                    type_w = "KM",
                                     phi = function(x){(x > 365) * 1},
                                     max_time = 366,
-                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+                                    types_w_ev = c("KM", "Cox", "RSF", "unif"))
 ```
 
-The `type_weights` argument specifies the type of weights to use in the model training, among `"KM"`, `"Cox"` and `"RSF"` (see part. ??, default = `"KM"`). The other possible value is `"unif"` which corresponds to every non censored observations getting the same weight (and censored obs. getting weights 0) : this value is not recommended since it generally leads to highly biased results, but it can be tested.
+The `type_w` argument specifies the type of weights to use in the model training, among `"KM"`, `"Cox"` and `"RSF"` (see part. ??, default = `"KM"`). The other possible value is `"unif"` which corresponds to every non censored observations getting the same weight (and censored obs. getting weights 0) : this value is not recommended since it generally leads to highly biased results, but it can be tested.
 
 Due to the `max_time` argument, the rate of censoring in the training data is different from the rate of censoring in the initial data :
 
 ```{r}
 print(sum(train$delta == 0) / nrow(train)) # rate of censoring on the initial data
-print(head(res1$censoring_rate_with_threshold)) # rate of censoring after thresholding with `max_time`
+print(head(res1$cens_rate)) # rate of censoring after thresholding with `max_time`
 ```
 
 The training weights, which are in the above example computed with the `"KM"` method, are returned by the function :
 
 ```{r}
-print(res1$v_weights_model_train[1:30])
+print(res1$w_mod_train[1:30])
 ```
 
-The parameter `max_ratio_weights_model` may also be specified in the model training (`default value = 20`). The purpose of this parameter is to limit the ratio $\max(\hat{w}_i) / \min(\hat{w}_i)$ to the value 
-`max_ratio_weights_model`. When needed, the weights $\hat{w}_i$ that exceed `max_ratio_weights_model`$* \min(\hat{w}_i)$ are set to the value : `max_ratio_weights_model`$* \min(\hat{w}_i)$. Afterwards, the weights $(\hat{w}_i)$ are normalised such that they sum to $1$.
+The parameter `max_w_mod` may also be specified in the model training (`default value = 20`). The purpose of this parameter is to limit the ratio $\max(\hat{w}_i) / \min(\hat{w}_i)$ to the value 
+`max_w_mod`. When needed, the weights $\hat{w}_i$ that exceed `max_w_mod`$* \min(\hat{w}_i)$ are set to the value : `max_w_mod`$* \min(\hat{w}_i)$. Afterwards, the weights $(\hat{w}_i)$ are normalised such that they sum to $1$.
 
 ```{r}
-print(res1$max_ratio_weights_model) # value passed to the weighted_regression_survival function (default value = 20)
-print(max(res1$v_weights_model_train) / min(res1$v_weights_model_train[res1$v_weights_model_train > 0])) # maximum ratio among the train weights
-print(res1$n_weights_model_modif_train) # number of weights modified due to `max_ratio_weights_model`
+print(res1$max_w_mod) # value passed to the sw_reg function (default value = 20)
+print(max(res1$w_mod_train) / min(res1$w_mod_train[res1$w_mod_train > 0])) # maximum ratio among the train weights
+print(res1$n_w_mod_modif_train) # number of weights modified due to `max_w_mod`
 ```
 
-In our example, as the rate of censoring is low and the values of $T$ are thresholded by $366$, the weights don't take big values and the parameter `max_ratio_weights_model` has no effect. But in some cases where the rate of censoring is high and/or `max_time` isn't specified, the weighs $\hat{w}_i$ can take very big values. When it happens, il should be corrected because the importance of a single observation in the final model must be limited : otherwise this results in very high variance in the final model.
+In our example, as the rate of censoring is low and the values of $T$ are thresholded by $366$, the weights don't take big values and the parameter `max_w_mod` has no effect. But in some cases where the rate of censoring is high and/or `max_time` isn't specified, the weighs $\hat{w}_i$ can take very big values. When it happens, il should be corrected because the importance of a single observation in the final model must be limited : otherwise this results in very high variance in the final model.
 
 
 ### Predictions of the model
 
-The predictions given by the model on the train and the test sets are available in the returned object :
+The predictions given by the model on the train and the test sets are available in the returned obj :
 
 ```{r}
-print(head(res1$predicted_train))
-print(head(res1$predicted_test))
+print(head(res1$pred_train))
+print(head(res1$pred_test))
 ```
 
-It is often needed to compute the predictions of the model on new data and the function `predict_weighted_regression_survival` allows to do so :
+It is often needed to compute the predictions of the model on new data and the function `predict_sw_reg` allows to do so :
 
 ```{r}
-pred_test = predict_weighted_regression_survival(object = res1, newdata = test)
-print(pred_test$predicted[1:30])
+pred_test = predict_sw_reg(obj = res1, newdata = test)
+print(pred_test$pred[1:30])
 ```
 
 
 ### Assess the quality of fit of the model
 
 
-The `type_weights_eval` argument has the same set of possible values as `type_weights`, but multiple choices are possible. This argument gives the names of the weights that should be considered for the calculation of the mean squared error (MSE) estimator. Indeed, we have that, likewise for the model training, the right censoring should be compensate in the test sample. We then use the same IPCW technique as for the training and the MSE is evaluated with :
+The `type_w_eval` argument has the same set of possible values as `type_w`, but multiple choices are possible. This argument gives the names of the weights that should be considered for the calculation of the mean squared error (MSE) estimator. Indeed, we have that, likewise for the model training, the right censoring should be compensate in the test sample. We then use the same IPCW technique as for the training and the MSE is evaluated with :
 
 $$MSE = \frac{1}{n_{test}} \sum_{i = 1}^{n_{test}} \hat{w}_i \cdot (\phi(y_i) - pred_i)^2$$
 
 where $pred_i$ is the prediction made by the model.
 
-Goodness of fit statistics on the test set are accessible through the `list_criteria_test` element of the returned object :
+Goodness of fit statistics on the test set are accessible through the `perf_test` element of the returned obj :
 
 ```{r}
-print(res1$list_criteria_test$criteria_weighted) # test mse and R2
+print(res1$perf_test$criteria_weighted) # test mse and R2
 ```
 
-We observe that we get one MSE for each type of weights specified in the `types_weights_eval` argument. 
+We observe that we get one MSE for each type of weights specified in the `types_w_ev` argument. 
 
 We also get the $R2$ criteria which are normalisations of the MSE. Let :
 
@@ -244,13 +244,13 @@ Then $R2 = 1 - MSE ~/~ \hat{Var}$.
 The classical concordance index (or C-index) is provided :
 
 ```{r}
-print(res1$list_criteria_test$concordance)
+print(res1$perf_test$concordance)
 ```
 
 These performance criteria are also computed on the train set :
 
 ```{r}
-print(res1$list_criteria_train)
+print(res1$perf_train)
 ```
 
 
@@ -258,76 +258,76 @@ The weights used to evaluate the model are accessible through :
 
 ```{r}
 # weights used for evaluation
-print(head(res1$mat_weights_train))
-print(head(res1$mat_weights_test))
+print(head(res1$mat_w_train))
+print(head(res1$mat_w_test))
 ```
 
 
-Likewise for the weights used for training, the ratio between the evaluation weights may be limited to a certain value (common for all the types of weights). This is specified by the argument `max_ratio_weights_eval`.
+Likewise for the weights used for training, the ratio between the evaluation weights may be limited to a certain value (common for all the types of weights). This is specified by the argument `max_w_ev`.
 
 ```{r}
-print(res1$max_ratio_weights_eval) # value passed to the weighted_regression_survival function (default value = 1000)
-print(res1$n_weights_eval_modif_test) # number of test weights modified because of the threshold
-print(res1$n_weights_eval_modif_train) # number of train weights modified because of the threshold
+print(res1$max_w_ev) # value passed to the sw_reg function (default value = 1000)
+print(res1$n_w_ev_modif_test) # number of test weights modified because of the threshold
+print(res1$n_w_ev_modif_train) # number of train weights modified because of the threshold
 ```
 
 
-The outputs `sum_weights_train` and `sum_weights_test` returns the sum of the weights $\hat{w}_i$ before any thresholding is done on the weights. This value is normally closed from 1. A value far from 1 may indicate a bad fit for the model which estimates $S_C(\cdot | X)$.
+The outputs `sum_w_train` and `sum_w_test` returns the sum of the weights $\hat{w}_i$ before any thresholding is done on the weights. This value is normally closed from 1. A value far from 1 may indicate a bad fit for the model which estimates $S_C(\cdot | X)$.
 
 ```{r}
-print(res1$sum_weights_train) # sum of the train weights before reprocessing
-print(res1$sum_weights_test) # sum fo the test weighs before reprocessing
+print(res1$sum_w_train) # sum of the train weights before reprocessing
+print(res1$sum_w_test) # sum fo the test weighs before reprocessing
 ```
 
 
 ### other mode for weighted random forest
 
 ```{r}
-res2 = weighted_regression_survival(y_var = "futime",
+res2 = sw_reg(y_var = "futime",
                                     delta_var = "delta",
                                     x_vars = c("age", "sex", "abo", "year"),
-                                    data_train = train,
-                                    data_test = test,
-                                    type_weights = "KM",
+                                    train = train,
+                                    test = test,
+                                    type_w = "KM",
                                     phi = function(x){(x > 365) * 1},
                                     max_time = 366,
-                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"),
-                                    mode_w_RF = 2)
+                                    types_w_ev = c("KM", "Cox", "RSF", "unif"),
+                                    mode_sw_RF = 2)
 ```
 
 ```{r}
-print(res2$list_criteria_test)
-print(res2$list_criteria_test_KMloc)
+print(res2$perf_test)
+print(res2$perf_test_KMloc)
 ```
 
 ### weighted GAM model
 
-The `weighted_regression_survival` may also be used to fit Generalized Additive Model (GAM) on survival data by specifying `type_regression = "gam"` in the function call. Here, we train a GLM model with *binomial* distribution and link *logit* on the data :
+The `sw_reg` may also be used to fit Generalized Additive Model (GAM) on survival data by specifying `type_reg = "gam"` in the function call. Here, we train a GLM model with *binomial* distribution and link *logit* on the data :
 
 ```{r}
-res2 = weighted_regression_survival(y_var = "futime", 
+res2 = sw_reg(y_var = "futime", 
                                     delta_var = "delta",
                                     x_vars = c("age", "sex", "abo", "year"),
-                                    data_train = train,
-                                    data_test = test,
-                                    type_regression = "gam",
-                                    type_weights = "Cox",
+                                    train = train,
+                                    test = test,
+                                    type_reg = "gam",
+                                    type_w = "Cox",
                                     phi = function(x){(x > 365) * 1},
                                     max_time = 366,
-                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"),
+                                    types_w_ev = c("KM", "Cox", "RSF", "unif"),
                                     family = binomial(link = "logit"))
 ```
-IPC weights are computed using the Cox model (`type_weights = "Cox"`). The gam object is returned by the function :
+IPC weights are computed using the Cox model (`type_w = "Cox"`). The gam obj is returned by the function :
 
 ```{r}
-summary(res2$weighted_gam_object)
+summary(res2$sw_gam_obj)
 ```
 
 The fit appears to be poor because the p-values of the coefficients are high. The following scores confirm the fit of the GLM (binomial) model is not good.
 
 ```{r}
-print(res2$predicted_test[1:20])
-print(res2$list_criteria_test)
+print(res2$pred_test[1:20])
+print(res2$perf_test)
 ```
 
 
@@ -340,29 +340,29 @@ Both the random forest algorithm and the GAM model can benefit from the adjustme
 - minleaf : minimum number of observations that should be present in a terminal leaf,
 - mtry : number of variables drawn uniformly at each node, to look for the best split.
 
-Those four parameters are available as parameters of the `weighted_regression_survival` function. But many other parameters can be pass to the *randomForestSRC::rfsrc* function of the package , or the *rpart::rpart* function. 
-In fact, any parameter of the wrapped function can be specified through a call to `weighted_regression_survival`, thanks to the argument `...`. For instance, one can add `proximity = TRUE` when calling to `weighted_regression_survival` (`type_regression = "rf"`, `mode_w_RF = 1`) and the argument will be pass to the function *randomForestSRC::rfsrc* :
+Those four parameters are available as parameters of the `sw_reg` function. But many other parameters can be pass to the *randomForestSRC::rfsrc* function of the package , or the *rpart::rpart* function. 
+In fact, any parameter of the wrapped function can be specified through a call to `sw_reg`, thanks to the argument `...`. For instance, one can add `proximity = TRUE` when calling to `sw_reg` (`type_reg = "rf"`, `mode_sw_RF = 1`) and the argument will be pass to the function *randomForestSRC::rfsrc* :
 
 ```{r}
-res11 = weighted_regression_survival(y_var = "futime", 
+res11 = sw_reg(y_var = "futime", 
                                     delta_var = "delta",
                                     x_vars = c("age", "sex", "abo", "year"),
-                                    data_train = train,
-                                    data_test = test,
-                                    type_weights = "KM",
+                                    train = train,
+                                    test = test,
+                                    type_w = "KM",
                                     phi = function(x){(x > 365) * 1},
                                     max_time = 366,
-                                    types_weights_eval = c("KM", "Cox", "RSF", "unif"),
+                                    types_w_ev = c("KM", "Cox", "RSF", "unif"),
                                     proximity = T)
 ```
 
 
 ```{r}
-print(res11$weighted_RF_object$proximity[1:5,1:5]) # matrix of the proximities between the first 5 obs. of the train set
-print(dim(res11$weighted_RF_object$proximity)) # dimension of the proximity matrix
+print(res11$sw_RF_obj$proximity[1:5,1:5]) # matrix of the proximities between the first 5 obs. of the train set
+print(dim(res11$sw_RF_obj$proximity)) # dimension of the proximity matrix
 ```
 
-For the *mgcv::gam* function, no additionnal parameter figure in the list of the arguments of `weighted_regression_survival`. Every parameter should be pass thanks to `"..."`. We did in the previous paragraph to specify `family = binomial(link = "logit")` in the gam model.
+For the *mgcv::gam* function, no additionnal parameter figure in the list of the arguments of `sw_reg`. Every parameter should be pass thanks to `"..."`. We did in the previous paragraph to specify `family = binomial(link = "logit")` in the gam model.
 
 
 ## Comparison with benchmark models
@@ -376,14 +376,14 @@ $$
 ### Random Survival Forest
 
 ```{r}
-res2 = RSF_regression(y_var = "futime",
+res2 = rsf_reg(y_var = "futime",
                       delta_var = "delta",
                       x_vars = c("age", "sex", "abo", "year"),
-                      data_train = transplant_bis[train_lines,],
-                      data_test = transplant_bis[-train_lines,],
+                      train = transplant_bis[train_lines,],
+                      test = transplant_bis[-train_lines,],
                       phi = function(x){(x > 365) * 1},
                       max_time = 366,
-                      types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
 ```
 
 For the first 10 observations of the test set, we draw the predicted survival curves :
@@ -392,7 +392,7 @@ For the first 10 observations of the test set, we draw the predicted survival cu
 dpi=300
 ```
 ```{r, fig.width=7}
-data_surv_test = cbind(melt(t(res2$survival_test[1:10,])), time = res2$time_points)
+data_surv_test = cbind(melt(t(res2$surv_test[1:10,])), time = res2$time_points)
 ggplot(data = data_surv_test, 
        aes(x = time, y = value, group = factor(Var2), color = factor(Var2))) +
   geom_line() +
@@ -405,31 +405,31 @@ Observe that we don't estimate the survival curves beyond `max_time`, since thes
 These survival curves correspond to the following predictions in terms of $\phi$ ($\phi(t) = 1_{t > 365}$):
 
 ```{r}
-res2$predicted_test[1:10]
+res2$pred_test[1:10]
 ```
 
-We have the same quality of fit criteria as for the function `weighted_regression_survival` :
+We have the same quality of fit criteria as for the function `sw_reg` :
 
 ```{r}
-print(res2$list_criteria_test)
+print(res2$perf_test)
 ```
 
 
 ### Cox model
 
 ```{r}
-res3 = Cox_regression(y_var = "futime",
+res3 = cox_reg(y_var = "futime",
                       delta_var = "delta",
                       x_vars = c("age", "sex", "abo", "year"),
-                      data_train = transplant_bis[train_lines,],
-                      data_test = transplant_bis[-train_lines,],
+                      train = transplant_bis[train_lines,],
+                      test = transplant_bis[-train_lines,],
                       phi = function(x){(x > 365) * 1},
                       max_time = 366,
-                      types_weights_eval = c("KM", "Cox", "RSF", "unif"))
+                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
 ```
 
 ```{r,  fig.width=7}
-data_surv_test2 = cbind(melt(t(res3$survival_test[1:10,])), time = res3$time_points)
+data_surv_test2 = cbind(melt(t(res3$surv_test[1:10,])), time = res3$time_points)
 ggplot(data = data_surv_test2, 
        aes(x = time, y = value, group = factor(Var2), color = factor(Var2))) +
   geom_line() +
@@ -438,25 +438,25 @@ ggplot(data = data_surv_test2,
 ```
 
 ```{r}
-print(res3$list_criteria_test)
+print(res3$perf_test)
 ```
 
 ### Comparison of the results
 
 In this example where the goal is to predict the probabily that the waiting time until leaver transplant exceeeds 1 year, we have seen that the weighted random forest approach achieve the best accuracy among the different model, followed closely by the Random Survival Forest benchmark. 
 
-The advantage of the weighted random forest compared to the other models is that it focus on optimising the criteria that we want to minimise, which is the quadratic error measured on the test set. On the other hand, the information processed by `weighted_regression_survival` is different from the information processed by a benchmark (`RSF_regression` for example). Indeed, `weighted_regression_survival` processes the information $(\phi(y_i), x_i, \hat{w}_i)_{i=1,..,n}$ whereas `RSF_regression` processes the data $(y_i, \delta_i, x_i)_{i=1,..n}$. Since, $\phi$ is an indicator function, `weighted_regression_survival` doesn't see the difference between the uncensored observations $(y_i = 370, \delta_i = 1, x_i = ..)$ and $(y_i = 900, \delta_i = 1, x_i = ..)$ whereas `RSF_regression` does make the difference.
+The advantage of the weighted random forest compared to the other models is that it focus on optimising the criteria that we want to minimise, which is the quadratic error measured on the test set. On the other hand, the information processed by `sw_reg` is different from the information processed by a benchmark (`rsf_reg` for example). Indeed, `sw_reg` processes the information $(\phi(y_i), x_i, \hat{w}_i)_{i=1,..,n}$ whereas `rsf_reg` processes the data $(y_i, \delta_i, x_i)_{i=1,..n}$. Since, $\phi$ is an indicator function, `sw_reg` doesn't see the difference between the uncensored observations $(y_i = 370, \delta_i = 1, x_i = ..)$ and $(y_i = 900, \delta_i = 1, x_i = ..)$ whereas `rsf_reg` does make the difference.
 
-We have compared `weighted_regression_survival` and the benchmarks on many datasets, and though there is no general rule that would identify the best model, there are some facts that we can highlight from the experiments. First, `weighted_regression_survival` appears to perform well when the censoring rate is low (less than 30%), and not very well when the rate of censoring increases. We think that this can be explained by the fact that `weighted_regression_survival` is really a generalisation of the classical random forest algorithm (for regression) to the right censored case. Hence, as the censoring rate gets low, we get closer from the case where there is no censoring, and `weighted_regression_survival` behaves similarly as the random forest in the uncensored case. Second, the $\phi$ function that is considered seems to have a big influence on the results. Finally, the weighted apprach of the function `weighted_regression_survival` seems to work better with conditionnal weights computed with Cox or RSF, than with Kaplan-Meier weights. But the latter observation does not appear in the experiments with the `transplant` data because the censoring rate of this dataset is too low (then the difference is very small between weights `KM` and the conditionnal weights).
+We have compared `sw_reg` and the benchmarks on many datasets, and though there is no general rule that would identify the best model, there are some facts that we can highlight from the experiments. First, `sw_reg` appears to perform well when the censoring rate is low (less than 30%), and not very well when the rate of censoring increases. We think that this can be explained by the fact that `sw_reg` is really a generalisation of the classical random forest algorithm (for regression) to the right censored case. Hence, as the censoring rate gets low, we get closer from the case where there is no censoring, and `sw_reg` behaves similarly as the random forest in the uncensored case. Second, the $\phi$ function that is considered seems to have a big influence on the results. Finally, the weighted apprach of the function `sw_reg` seems to work better with conditionnal weights computed with Cox or RSF, than with Kaplan-Meier weights. But the latter observation does not appear in the experiments with the `transplant` data because the censoring rate of this dataset is too low (then the difference is very small between weights `KM` and the conditionnal weights).
 
-We have also observed that the predictions obtained with `weighted_regression_survival` and the predictions made with benchmarks are not correlated a lot, and that combining them usually leads to better accuracy
+We have also observed that the predictions obtained with `sw_reg` and the predictions made with benchmarks are not correlated a lot, and that combining them usually leads to better accuracy
 
 
 ```{r}
 # là j'ai calculé le R2 du modele qui est la moyenne entre weighted rf et RSF, mai visiblement pas ouf (trop de variance dans les résultats de tte façon)
-mean = sum( res1$mat_weights_test[,"KM"] * res1$data_test$phi)
-R2 = 1 - sum( res1$mat_weights_test[,"KM"] * ((res1$predicted_test + res2$predicted_test)/2 - res1$data_test$phi )^2) / 
-  sum( res1$mat_weights_test[,"KM"] * (res1$data_test$phi - mean )^2)
+mean = sum( res1$mat_w_test[,"KM"] * res1$test$phi)
+R2 = 1 - sum( res1$mat_w_test[,"KM"] * ((res1$pred_test + res2$pred_test)/2 - res1$test$phi )^2) / 
+  sum( res1$mat_w_test[,"KM"] * (res1$test$phi - mean )^2)
 
 print(mean)
 print(R2)

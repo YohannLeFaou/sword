@@ -59,15 +59,6 @@ eval_aggregated_criteria = function(model_predictions, data, y_name, delta_name,
   }
 }
 
-#' @title helper function
-#'
-#' @description function called by \code{\link{NormalizedGini}}
-#'
-#' @param solutions nada
-#' @param predictions nada
-#' @param weights nada
-#'
-#' @seealso \code{\link{NormalizedGini}}
 
 SumModelGini <- function(solutions, predictions, weights){
   ## function called by NormalizedGini
@@ -83,51 +74,6 @@ SumModelGini <- function(solutions, predictions, weights){
 }
 
 
-#' @title Compute a Gini goodness of fit statistic
-#'
-#' @description Given a vector of observed values \code{solutions} and a vector
-#' of predicted values \code{predictions}, the Gini index
-#' measures how well the order of the predicted values corresponds
-#' to the order of the observed values.
-#'
-#' @param solutions A vector of observed values
-#' @param predictions A vector of predicted values
-#' @param weights A vector of weights for the single observations (défault = \code{NULL}).
-#' If \code{NULL}, then weights are taken as equal to 1
-#'
-#' @details
-#' \itemize{
-#' \item \code{solutions} is transformed into \code{rank(solutions)} before we compute
-#' the gini coefficient
-#' \item The weighted Gini index may not give meaningfull information if \code{weights}
-#' depends on \code{predictions}
-#' }
-#'
-#' @return The real number giving the value of the Gini index
-#'
-#' @seealso \code{\link{SumModelGini}}
-#'
-#' @export
-#'
-#' @examples
-#'
-#' set.seed(17)
-#' x = runif(1000)
-#' y = rnorm(mean = x, sd = 1, n = 1000)
-#'
-#' NormalizedGini(solutions = x,
-#'                predictions = y)
-#'
-#' NormalizedGini(solutions = x,
-#'                predictions = y,
-#'                weights = x)
-#'
-#' # be carefull with the weight argument
-#' NormalizedGini(solutions = x,
-#'                predictions = y,
-#'                weights = abs(y))
-#' # when the weights depends on \code{predictions}, \code{NormalizedGini}
-#' # may gives strange results
 
 NormalizedGini <- function(solutions, predictions, weights = NULL) {
   # function which computes the Gini index of performance of a model

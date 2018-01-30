@@ -620,6 +620,8 @@ sw_reg = function(y_var,
                                    FUN = function(i){do.call(phi, c(list(x=pmin(data[,y_no_cens_var], max_time)[i]), phi.args))})
   }
 
+  cens_mod_object = NULL
+
   if (weights_manual){
     if (nrow(mat_w) != nrow(data)){stop("mat_w should satisfy nrow(mat_w) = nrow(train) + nrow(test)")}
     if (is.null(type_w)){
@@ -628,7 +630,6 @@ sw_reg = function(y_var,
     w_mod_train = mat_w[1:nrow(train), type_w]
     mat_w_train = mat_w[1:nrow(train),]
     sum_w_train = apply(X = mat_w_train, MARGIN = 2, FUN = sum)
-    cens_mod_obj = NULL
     if (!is.null(test)){
       mat_w_test = mat_w[(nrow(train) +1):nrow(data),]
       sum_w_test = apply(X = mat_w_test, MARGIN = 2, FUN = sum)
@@ -659,7 +660,7 @@ sw_reg = function(y_var,
                                          cens_mod_obj = cens_mod_obj)
         mat_w_train[,j] = res_weights_train$weights
         w_mod_train = res_weights_train$weights
-        cens_mod_obj = res_weights_train$cens_mod_obj
+        cens_mod_object = res_weights_train$cens_mod_object
 
         if (!is.null(test)){
           res_weights_test = make_weights(data = data[data$is_train == 0, ],
@@ -791,9 +792,9 @@ sw_reg = function(y_var,
     weighted_regression_result$sum_w_test = sum_w_test
     weighted_regression_result$n_w_ev_modif_test = n_w_ev_modif_test
   }
-  if (!is.null(cens_mod_obj)){
+  if (!is.null(cens_mod_object)){
     # return only the model for censoring fitted on train data
-    weighted_regression_result$cens_mod_obj = cens_mod_obj
+    weighted_regression_result$cens_mod_obj = cens_mod_object
   }
   return(weighted_regression_result)
 }
