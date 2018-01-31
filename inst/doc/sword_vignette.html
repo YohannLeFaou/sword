@@ -11,7 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 
-<meta name="date" content="2018-01-30" />
+<meta name="date" content="2018-01-31" />
 
 <title>Modelling right censored data with sword</title>
 
@@ -68,7 +68,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 
 <h1 class="title toc-ignore">Modelling right censored data with sword</h1>
-<h4 class="date"><em>2018-01-30</em></h4>
+<h4 class="date"><em>2018-01-31</em></h4>
 
 
 
@@ -160,7 +160,7 @@ transplant_bis =<span class="st"> </span>transplant[<span class="kw">complete.ca
 <h2>Statistics about the data (Survival function of the outcome)</h2>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># plot the survival curve of the waiting time until transplant</span>
 KM =<span class="st"> </span><span class="kw">survfit</span>(<span class="dt">formula =</span> <span class="kw">Surv</span>(<span class="dt">time =</span> futime, <span class="dt">event =</span> delta) ~<span class="st"> </span><span class="dv">1</span>,
-                        <span class="dt">data =</span> transplant_bis)
+             <span class="dt">data =</span> transplant_bis)
 <span class="kw">plot</span>(KM, 
      <span class="dt">main =</span> <span class="st">&quot;Survival Curve of the waiting time before liver transplant&quot;</span>, 
      <span class="dt">ylab =</span> <span class="st">&quot;survival prob.&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;time (days)&quot;</span>)</code></pre></div>
@@ -185,14 +185,14 @@ test =<span class="st"> </span>transplant_bis[-train_lines,] <span class="co"># 
 <h3>Train a weighted random forest model</h3>
 <p>By default, the <code>type_reg</code> argument of <code>sw_reg</code> takes the values <code>&quot;RF&quot;</code>, which means the regression algorithm used by the function is the random forest. The other possible value is <code>&quot;gam&quot;</code>. Then, the following command train a weighted random forest model on the transplant data :</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res1 =<span class="st"> </span><span class="kw">sw_reg</span>(<span class="dt">y_var =</span> <span class="st">&quot;futime&quot;</span>, 
-                                    <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
-                                    <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
-                                    <span class="dt">train =</span> train,
-                                    <span class="dt">test =</span> test,
-                                    <span class="dt">type_w =</span> <span class="st">&quot;KM&quot;</span>,
-                                    <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
-                                    <span class="dt">max_time =</span> <span class="dv">366</span>,
-                                    <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>))</code></pre></div>
+              <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
+              <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
+              <span class="dt">train =</span> train,
+              <span class="dt">test =</span> test,
+              <span class="dt">type_w =</span> <span class="st">&quot;KM&quot;</span>,
+              <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
+              <span class="dt">max_time =</span> <span class="dv">366</span>,
+              <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>))</code></pre></div>
 <p>The <code>type_w</code> argument specifies the type of weights to use in the model training, among <code>&quot;KM&quot;</code>, <code>&quot;Cox&quot;</code> and <code>&quot;RSF&quot;</code> (see part. ??, default = <code>&quot;KM&quot;</code>). The other possible value is <code>&quot;unif&quot;</code> which corresponds to every non censored observations getting the same weight (and censored obs. getting weights 0) : this value is not recommended since it generally leads to highly biased results, but it can be tested.</p>
 <p>Due to the <code>max_time</code> argument, the rate of censoring in the training data is different from the rate of censoring in the initial data :</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(<span class="kw">sum</span>(train$delta ==<span class="st"> </span><span class="dv">0</span>) /<span class="st"> </span><span class="kw">nrow</span>(train)) <span class="co"># rate of censoring on the initial data</span>
@@ -303,15 +303,15 @@ test =<span class="st"> </span>transplant_bis[-train_lines,] <span class="co"># 
 <div id="other-mode-for-weighted-random-forest" class="section level3">
 <h3>other mode for weighted random forest</h3>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res2 =<span class="st"> </span><span class="kw">sw_reg</span>(<span class="dt">y_var =</span> <span class="st">&quot;futime&quot;</span>,
-                                    <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
-                                    <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
-                                    <span class="dt">train =</span> train,
-                                    <span class="dt">test =</span> test,
-                                    <span class="dt">type_w =</span> <span class="st">&quot;KM&quot;</span>,
-                                    <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
-                                    <span class="dt">max_time =</span> <span class="dv">366</span>,
-                                    <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>),
-                                    <span class="dt">mode_sw_RF =</span> <span class="dv">2</span>)
+              <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
+              <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
+              <span class="dt">train =</span> train,
+              <span class="dt">test =</span> test,
+              <span class="dt">type_w =</span> <span class="st">&quot;KM&quot;</span>,
+              <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
+              <span class="dt">max_time =</span> <span class="dv">366</span>,
+              <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>),
+              <span class="dt">mode_sw_RF =</span> <span class="dv">2</span>)
 <span class="co">#&gt; tree1.. tree2.. tree5.. tree10.. tree20.. tree30.. tree40.. tree50.. tree60.. tree70.. tree80.. tree90.. tree100..</span></code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(res2$perf_test)
 <span class="co">#&gt; $concordance</span>
@@ -338,16 +338,16 @@ test =<span class="st"> </span>transplant_bis[-train_lines,] <span class="co"># 
 <h3>weighted GAM model</h3>
 <p>The <code>sw_reg</code> may also be used to fit Generalized Additive Model (GAM) on survival data by specifying <code>type_reg = &quot;gam&quot;</code> in the function call. Here, we train a GLM model with <em>binomial</em> distribution and link <em>logit</em> on the data :</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res2 =<span class="st"> </span><span class="kw">sw_reg</span>(<span class="dt">y_var =</span> <span class="st">&quot;futime&quot;</span>, 
-                                    <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
-                                    <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
-                                    <span class="dt">train =</span> train,
-                                    <span class="dt">test =</span> test,
-                                    <span class="dt">type_reg =</span> <span class="st">&quot;gam&quot;</span>,
-                                    <span class="dt">type_w =</span> <span class="st">&quot;Cox&quot;</span>,
-                                    <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
-                                    <span class="dt">max_time =</span> <span class="dv">366</span>,
-                                    <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>),
-                                    <span class="dt">family =</span> <span class="kw">binomial</span>(<span class="dt">link =</span> <span class="st">&quot;logit&quot;</span>))
+              <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
+              <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
+              <span class="dt">train =</span> train,
+              <span class="dt">test =</span> test,
+              <span class="dt">type_reg =</span> <span class="st">&quot;gam&quot;</span>,
+              <span class="dt">type_w =</span> <span class="st">&quot;Cox&quot;</span>,
+              <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
+              <span class="dt">max_time =</span> <span class="dv">366</span>,
+              <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>),
+              <span class="dt">family =</span> <span class="kw">binomial</span>(<span class="dt">link =</span> <span class="st">&quot;logit&quot;</span>))
 <span class="co">#&gt; Warning in eval(family$initialize): non-integer #successes in a binomial</span>
 <span class="co">#&gt; glm!</span>
 
@@ -407,15 +407,15 @@ test =<span class="st"> </span>transplant_bis[-train_lines,] <span class="co"># 
 </ul>
 <p>Those four parameters are available as parameters of the <code>sw_reg</code> function. But many other parameters can be pass to the <em>randomForestSRC::rfsrc</em> function of the package , or the <em>rpart::rpart</em> function. In fact, any parameter of the wrapped function can be specified through a call to <code>sw_reg</code>, thanks to the argument <code>...</code>. For instance, one can add <code>proximity = TRUE</code> when calling to <code>sw_reg</code> (<code>type_reg = &quot;rf&quot;</code>, <code>mode_sw_RF = 1</code>) and the argument will be pass to the function <em>randomForestSRC::rfsrc</em> :</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res11 =<span class="st"> </span><span class="kw">sw_reg</span>(<span class="dt">y_var =</span> <span class="st">&quot;futime&quot;</span>, 
-                                    <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
-                                    <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
-                                    <span class="dt">train =</span> train,
-                                    <span class="dt">test =</span> test,
-                                    <span class="dt">type_w =</span> <span class="st">&quot;KM&quot;</span>,
-                                    <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
-                                    <span class="dt">max_time =</span> <span class="dv">366</span>,
-                                    <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>),
-                                    <span class="dt">proximity =</span> T)</code></pre></div>
+               <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
+               <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
+               <span class="dt">train =</span> train,
+               <span class="dt">test =</span> test,
+               <span class="dt">type_w =</span> <span class="st">&quot;KM&quot;</span>,
+               <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
+               <span class="dt">max_time =</span> <span class="dv">366</span>,
+               <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>),
+               <span class="dt">proximity =</span> T)</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">print</span>(res11$sw_RF_obj$proximity[<span class="dv">1</span>:<span class="dv">5</span>,<span class="dv">1</span>:<span class="dv">5</span>]) <span class="co"># matrix of the proximities between the first 5 obs. of the train set</span>
 <span class="co">#&gt;            [,1]  [,2]       [,3]      [,4]      [,5]</span>
 <span class="co">#&gt; [1,] 1.00000000 0.225 0.02380952 0.0000000 0.0000000</span>
@@ -437,13 +437,13 @@ test =<span class="st"> </span>transplant_bis[-train_lines,] <span class="co"># 
 <div id="random-survival-forest" class="section level3">
 <h3>Random Survival Forest</h3>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res2 =<span class="st"> </span><span class="kw">rsf_reg</span>(<span class="dt">y_var =</span> <span class="st">&quot;futime&quot;</span>,
-                      <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
-                      <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
-                      <span class="dt">train =</span> transplant_bis[train_lines,],
-                      <span class="dt">test =</span> transplant_bis[-train_lines,],
-                      <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
-                      <span class="dt">max_time =</span> <span class="dv">366</span>,
-                      <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>))</code></pre></div>
+               <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
+               <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
+               <span class="dt">train =</span> transplant_bis[train_lines,],
+               <span class="dt">test =</span> transplant_bis[-train_lines,],
+               <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
+               <span class="dt">max_time =</span> <span class="dv">366</span>,
+               <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>))</code></pre></div>
 <p>For the first 10 observations of the test set, we draw the predicted survival curves :</p>
 <pre><code>dpi=300</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">data_surv_test =<span class="st"> </span><span class="kw">cbind</span>(<span class="kw">melt</span>(<span class="kw">t</span>(res2$surv_test[<span class="dv">1</span>:<span class="dv">10</span>,])), <span class="dt">time =</span> res2$time_points)
@@ -473,13 +473,14 @@ test =<span class="st"> </span>transplant_bis[-train_lines,] <span class="co"># 
 <div id="cox-model" class="section level3">
 <h3>Cox model</h3>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">res3 =<span class="st"> </span><span class="kw">cox_reg</span>(<span class="dt">y_var =</span> <span class="st">&quot;futime&quot;</span>,
-                      <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
-                      <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
-                      <span class="dt">train =</span> transplant_bis[train_lines,],
-                      <span class="dt">test =</span> transplant_bis[-train_lines,],
-                      <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
-                      <span class="dt">max_time =</span> <span class="dv">366</span>,
-                      <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>))</code></pre></div>
+               <span class="dt">delta_var =</span> <span class="st">&quot;delta&quot;</span>,
+               <span class="dt">x_vars =</span> <span class="kw">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;abo&quot;</span>, <span class="st">&quot;year&quot;</span>),
+               <span class="dt">train =</span> transplant_bis[train_lines,],
+               <span class="dt">test =</span> transplant_bis[-train_lines,],
+               <span class="dt">phi =</span> function(x){(x &gt;<span class="st"> </span><span class="dv">365</span>) *<span class="st"> </span><span class="dv">1</span>},
+               <span class="dt">max_time =</span> <span class="dv">366</span>,
+               <span class="dt">types_w_ev =</span> <span class="kw">c</span>(<span class="st">&quot;KM&quot;</span>, <span class="st">&quot;Cox&quot;</span>, <span class="st">&quot;RSF&quot;</span>, <span class="st">&quot;unif&quot;</span>)
+               )</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">data_surv_test2 =<span class="st"> </span><span class="kw">cbind</span>(<span class="kw">melt</span>(<span class="kw">t</span>(res3$surv_test[<span class="dv">1</span>:<span class="dv">10</span>,])), <span class="dt">time =</span> res3$time_points)
 <span class="kw">ggplot</span>(<span class="dt">data =</span> data_surv_test2, 
        <span class="kw">aes</span>(<span class="dt">x =</span> time, <span class="dt">y =</span> value, <span class="dt">group =</span> <span class="kw">factor</span>(Var2), <span class="dt">color =</span> <span class="kw">factor</span>(Var2))) +

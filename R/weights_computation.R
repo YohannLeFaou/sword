@@ -10,10 +10,10 @@ make_weights_from_surv_curves = function(vect_y, vect_delta, mat_surv_curves_C, 
     apply(X = x,
           MARGIN = 1,
           FUN = function(a){stats::approx(x = time_points,
-                                   y = a[-1],
-                                   xout = a[1],
-                                   rule = 2,
-                                   method = "linear")$y
+                                          y = a[-1],
+                                          xout = a[1],
+                                          rule = 2,
+                                          method = "linear")$y
           }
     )
   w = vect_delta
@@ -50,10 +50,10 @@ make_KM_weights = function(vect_y, vect_delta, vect_c = NULL){
   c_surv = c(1,km_c$surv)
   N = length(vect_y)
   w = stats::approx(x = c_time, # weights are estimated by interpolation of S_C estimator
-             y = c_surv,
-             xout = vect_y,
-             method = "linear",
-             rule = 2)
+                    y = c_surv,
+                    xout = vect_y,
+                    method = "linear",
+                    rule = 2)
   weights = ifelse(vect_delta == 0, 0, 1/N * 1/w$y)
   return(list(weights = weights,
               censoring_survfit = km_c))
@@ -90,7 +90,7 @@ make_weights = function(data,
       weights = rep(1/nrow(data), nrow(data))
     } else {
       res_KM_weights = make_KM_weights(vect_y = data[,y_name],
-                                    vect_delta = data[,delta_name])
+                                       vect_delta = data[,delta_name])
       weights = res_KM_weights$weights
       if (cens_mod_obj){
         list_result$cens_mod_object = res_KM_weights$censoring_survfit
@@ -111,10 +111,10 @@ make_weights = function(data,
 
     weights = 1/ nrow(data) /
       pmax( (stats::approx(x = ref_surv$time,
-                    y = ref_surv$surv,
-                    xout = data[,y_name],
-                    method = "linear",
-                    rule = 2)$y)^(exp(cox_fit$linear.predictors)) , 1/(max_ratio_weights * 1.5) )
+                           y = ref_surv$surv,
+                           xout = data[,y_name],
+                           method = "linear",
+                           rule = 2)$y)^(exp(cox_fit$linear.predictors)) , 1/(max_ratio_weights * 1.5) )
     weights[data[,delta_name] == 0] = 0
     if(cens_mod_obj){list_result$cens_mod_object = cox_fit}
   }
@@ -135,9 +135,9 @@ make_weights = function(data,
                                      ntime = ntime)
 
     weights = make_weights_from_surv_curves(vect_y = data[, y_name],
-                                                vect_delta = data[, delta_name],
-                                                mat_surv_curves_C = cbind(1, RSF_fit$survival.oob),
-                                                time_points = c(0, RSF_fit$time.interest))
+                                            vect_delta = data[, delta_name],
+                                            mat_surv_curves_C = cbind(1, RSF_fit$survival.oob),
+                                            time_points = c(0, RSF_fit$time.interest))
     if(cens_mod_obj){list_result$cens_mod_object = RSF_fit}
   }
   sum_w = sum(weights)

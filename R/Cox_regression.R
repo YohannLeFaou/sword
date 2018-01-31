@@ -294,21 +294,21 @@
 
 
 cox_reg = function(y_var,
-                          delta_var,
-                          x_vars,
-                          train,
-                          test = NULL,
-                          phi = function(x){x},
-                          phi.args = list(),
-                          max_time = NULL,
-                          cox_obj = TRUE,
-                          ev_methods = c("concordance","weighted"),
-                          bandwidths = NULL,
-                          types_w_ev = c("KM"),
-                          max_w_ev = 1000,
-                          mat_w = NULL,
-                          y_no_cens_var = NULL,
-                          ...){
+                   delta_var,
+                   x_vars,
+                   train,
+                   test = NULL,
+                   phi = function(x){x},
+                   phi.args = list(),
+                   max_time = NULL,
+                   cox_obj = TRUE,
+                   ev_methods = c("concordance","weighted"),
+                   bandwidths = NULL,
+                   types_w_ev = c("KM"),
+                   max_w_ev = 1000,
+                   mat_w = NULL,
+                   y_no_cens_var = NULL,
+                   ...){
 
   # Preprocessing of the arguments & data
 
@@ -364,24 +364,24 @@ cox_reg = function(y_var,
     }
     for (j in 1:length(types_w_ev)){
       mat_w_train[,j] = make_weights(data = data[data$is_train == 1, ],
-                                           y_name = "y_prime",
-                                           delta_name = "delta_prime",
-                                           y_name2 = y_var,
-                                           delta_name2 = delta_var,
-                                           type = types_w_ev[j],
-                                           max_ratio_weights = 1000,
-                                           x_vars = x_vars,
-                                           cens_mod_obj = FALSE)$weights
+                                     y_name = "y_prime",
+                                     delta_name = "delta_prime",
+                                     y_name2 = y_var,
+                                     delta_name2 = delta_var,
+                                     type = types_w_ev[j],
+                                     max_ratio_weights = 1000,
+                                     x_vars = x_vars,
+                                     cens_mod_obj = FALSE)$weights
       if (!is.null(test)){
         mat_w_test[,j] = make_weights(data = data[data$is_train == 0, ],
-                                            y_name = "y_prime",
-                                            delta_name = "delta_prime",
-                                            y_name2 = y_var,
-                                            delta_name2 = delta_var,
-                                            type = types_w_ev[j],
-                                            max_ratio_weights = 1000,
-                                            x_vars = x_vars,
-                                            cens_mod_obj = FALSE)$weights
+                                      y_name = "y_prime",
+                                      delta_name = "delta_prime",
+                                      y_name2 = y_var,
+                                      delta_name2 = delta_var,
+                                      type = types_w_ev[j],
+                                      max_ratio_weights = 1000,
+                                      x_vars = x_vars,
+                                      cens_mod_obj = FALSE)$weights
       }
     }
   }
@@ -397,28 +397,28 @@ cox_reg = function(y_var,
   ## train
 
   n_w_ev_modif_train = apply(X = mat_w_train, MARGIN = 2,
-                                     FUN = function(x){
-                                       x = sum(x > min(x[x > 0]) * max_w_ev)
-                                     })
+                             FUN = function(x){
+                               x = sum(x > min(x[x > 0]) * max_w_ev)
+                             })
 
   mat_w_train = apply(X = mat_w_train, MARGIN = 2,
-                            FUN = function(x){
-                              x = pmin(x, min(x[x > 0]) * max_w_ev)
-                              x = x / sum(x)
-                            })
+                      FUN = function(x){
+                        x = pmin(x, min(x[x > 0]) * max_w_ev)
+                        x = x / sum(x)
+                      })
   ## test
   if (!is.null(test)){
 
     n_w_ev_modif_test = apply(X = mat_w_test, MARGIN = 2,
-                                      FUN = function(x){
-                                        x = sum(x > min(x[x > 0]) * max_w_ev)
-                                      })
+                              FUN = function(x){
+                                x = sum(x > min(x[x > 0]) * max_w_ev)
+                              })
 
     mat_w_test = apply(X = mat_w_test, MARGIN = 2,
-                             FUN = function(x){
-                               x = pmin(x, min(x[x > 0]) * max_w_ev)
-                               x = x / sum(x)
-                             })
+                       FUN = function(x){
+                         x = pmin(x, min(x[x > 0]) * max_w_ev)
+                         x = x / sum(x)
+                       })
   }
 
   # build train & test
@@ -435,10 +435,10 @@ cox_reg = function(y_var,
 
   baseline_cox = survival::basehaz(Cox)
   approx_ref_surv = stats::approx(x = c(0,baseline_cox$time),
-                           y = c(1,exp( - baseline_cox$hazard)),
-                           xout = seq(from = 0,to = max_time * 0.99,length.out = 100),
-                           method = "linear",
-                           rule = 2)
+                                  y = c(1,exp( - baseline_cox$hazard)),
+                                  xout = seq(from = 0,to = max_time * 0.99,length.out = 100),
+                                  method = "linear",
+                                  rule = 2)
 
   # results on train
   overfitted_surv_curv_direct_Cox = do.call(rbind,
@@ -457,17 +457,17 @@ cox_reg = function(y_var,
 
   # Performances on train test
   perf_train = eval_model(predictions = overfitted_predictions_direct_Cox,
-                                   data = train,
-                                   phi_name = "phi",
-                                   y_name = "y_prime",
-                                   delta_name = "delta_prime",
-                                   max_time = max_time,
-                                   ev_methods = ev_methods,
-                                   phi = phi,
-                                   phi.args = phi.args,
-                                   mat_w = mat_w_train,
-                                   phi_non_censored_name = phi_non_censored_name,
-                                   bandwidths = bandwidths)
+                          data = train,
+                          phi_name = "phi",
+                          y_name = "y_prime",
+                          delta_name = "delta_prime",
+                          max_time = max_time,
+                          ev_methods = ev_methods,
+                          phi = phi,
+                          phi.args = phi.args,
+                          mat_w = mat_w_train,
+                          phi_non_censored_name = phi_non_censored_name,
+                          bandwidths = bandwidths)
 
   if (!is.null(test)){
 
@@ -487,17 +487,17 @@ cox_reg = function(y_var,
 
     # Performances on test set
     perf_test = eval_model(predictions = test_predictions_direct_Cox,
-                                    data = test,
-                                    phi_name = "phi",
-                                    y_name = "y_prime",
-                                    delta_name = "delta_prime",
-                                    max_time = max_time,
-                                    ev_methods = ev_methods,
-                                    phi = phi,
-                                    phi.args = phi.args,
-                                    mat_w = mat_w_test,
-                                    phi_non_censored_name = phi_non_censored_name,
-                                    bandwidths = bandwidths)
+                           data = test,
+                           phi_name = "phi",
+                           y_name = "y_prime",
+                           delta_name = "delta_prime",
+                           max_time = max_time,
+                           ev_methods = ev_methods,
+                           phi = phi,
+                           phi.args = phi.args,
+                           mat_w = mat_w_test,
+                           phi_non_censored_name = phi_non_censored_name,
+                           bandwidths = bandwidths)
   }
 
   result = list(
@@ -529,7 +529,7 @@ cox_reg = function(y_var,
     }
   }
   return(result)
-}
+  }
 
 
 #' @title Compute the prediction of a model built with \code{\link{cox_reg}}
@@ -591,10 +591,10 @@ predict_cox_reg = function(obj, newdata){
 
   baseline_cox = survival::basehaz(obj$cox_obj)
   approx_ref_surv = stats::approx(x = c(0,baseline_cox$time),
-                           y = c(1,exp( - baseline_cox$hazard)),
-                           xout = seq(from = 0,to = obj$max_time * 0.99,length.out = 100),
-                           method = "linear",
-                           rule = 2)
+                                  y = c(1,exp( - baseline_cox$hazard)),
+                                  xout = seq(from = 0,to = obj$max_time * 0.99,length.out = 100),
+                                  method = "linear",
+                                  rule = 2)
 
   time_points = c(approx_ref_surv$x[which(approx_ref_surv$x < obj$max_time)], obj$max_time)
 
@@ -613,5 +613,5 @@ predict_cox_reg = function(obj, newdata){
               surv = predictions_surv_curves,
               time_points = time_points
   ))
-}
+  }
 

@@ -542,32 +542,32 @@
 #' print(res6$perf_test) # slight improvment compared with weights KM
 
 sw_reg = function(y_var,
-                                        delta_var,
-                                        x_vars,
-                                        train,
-                                        test = NULL,
-                                        type_reg = "RF",
-                                        type_w = "KM",
-                                        phi = function(x){x},
-                                        phi.args = list(),
-                                        max_time = NULL,
-                                        sw_reg_obj = T,
-                                        cens_mod_obj = T,
-                                        ev_methods = c("concordance","weighted"),
-                                        bandwidths = NULL,
-                                        types_w_ev = "KM",
-                                        max_w_mod = NULL,
-                                        max_w_ev = 1000,
-                                        mat_w = NULL, # when mat_w is not NULL, and type_w is NULL, the column 1 of mat_w is employed for fitting
-                                        y_no_cens_var = NULL,
+                  delta_var,
+                  x_vars,
+                  train,
+                  test = NULL,
+                  type_reg = "RF",
+                  type_w = "KM",
+                  phi = function(x){x},
+                  phi.args = list(),
+                  max_time = NULL,
+                  sw_reg_obj = T,
+                  cens_mod_obj = T,
+                  ev_methods = c("concordance","weighted"),
+                  bandwidths = NULL,
+                  types_w_ev = "KM",
+                  max_w_mod = NULL,
+                  max_w_ev = 1000,
+                  mat_w = NULL, # when mat_w is not NULL, and type_w is NULL, the column 1 of mat_w is employed for fitting
+                  y_no_cens_var = NULL,
 
-                                        # param for RF
-                                        mode_sw_RF = 1,
-                                        ntree = 100,
-                                        minleaf = 5,
-                                        maxdepth = 6,
-                                        mtry = NULL,
-                                        ...){
+                  # param for RF
+                  mode_sw_RF = 1,
+                  ntree = 100,
+                  minleaf = 5,
+                  maxdepth = 6,
+                  mtry = NULL,
+                  ...){
 
   # Preprocessing of the arguments & data
 
@@ -722,28 +722,28 @@ sw_reg = function(y_var,
   # weights_eval
   ## train
   n_w_ev_modif_train = apply(X = mat_w_train, MARGIN = 2,
-                                     FUN = function(x){
-                                       x = sum(x > min(x[x > 0]) * max_w_ev)
-                                     })
+                             FUN = function(x){
+                               x = sum(x > min(x[x > 0]) * max_w_ev)
+                             })
 
   mat_w_train = apply(X = mat_w_train, MARGIN = 2,
-                            FUN = function(x){
-                              x = pmin(x, min(x[x > 0]) * max_w_ev)
-                              x = x / sum(x)
-                            })
+                      FUN = function(x){
+                        x = pmin(x, min(x[x > 0]) * max_w_ev)
+                        x = x / sum(x)
+                      })
   ## test
   if (!is.null(test)){
 
     n_w_ev_modif_test = apply(X = mat_w_test, MARGIN = 2,
-                                       FUN = function(x){
-                                         x = sum(x > min(x[x > 0]) * max_w_ev)
-                                       })
+                              FUN = function(x){
+                                x = sum(x > min(x[x > 0]) * max_w_ev)
+                              })
 
     mat_w_test = apply(X = mat_w_test, MARGIN = 2,
-                             FUN = function(x){
-                               x = pmin(x, min(x[x > 0]) * max_w_ev)
-                               x = x / sum(x)
-                             })
+                       FUN = function(x){
+                         x = pmin(x, min(x[x > 0]) * max_w_ev)
+                         x = x / sum(x)
+                       })
   }
 
   # build train & test
@@ -797,7 +797,7 @@ sw_reg = function(y_var,
     weighted_regression_result$cens_mod_obj = cens_mod_object
   }
   return(weighted_regression_result)
-}
+  }
 
 
 
@@ -883,19 +883,19 @@ predict_sw_reg = function(obj, newdata){
   }
   if (!is.null(obj$sw_rpartRF_obj)){
     res_predictions = predict_rpartRF(obj = obj$sw_rpartRF_obj,
-                                  newdata = newdata[,obj$x_vars],
-                                  type = "normal")
+                                      newdata = newdata[,obj$x_vars],
+                                      type = "normal")
 
     res_predictions_KMloc = predict_rpartRF(obj = obj$sw_rpartRF_obj,
-                                       newdata = newdata[,obj$x_vars],
-                                       type = "KMloc")
+                                            newdata = newdata[,obj$x_vars],
+                                            type = "KMloc")
 
     return(list(pred = res_predictions$pred,
                 pred_KMloc = res_predictions_KMloc$pred_KMloc,
                 surv_KMloc = res_predictions_KMloc$pred_surv_KMloc,
                 time_points = res_predictions_KMloc$time))
   }
-}
+  }
 
 
 make_res_weighted_regression = function(y_var,
@@ -963,8 +963,8 @@ make_res_weighted_regression = function(y_var,
                                                type = "normal")$pred
 
       res_overfitted_predictions_KMloc = predict_rpartRF(obj = rpartRF_fit,
-                                                       newdata = train[,x_vars],
-                                                       type = "KMloc")
+                                                         newdata = train[,x_vars],
+                                                         type = "KMloc")
 
       overfitted_predictions_KMloc = res_overfitted_predictions_KMloc$pred_KMloc
 
@@ -984,31 +984,31 @@ make_res_weighted_regression = function(y_var,
 
   # Eval on train
   perf_train = eval_model(predictions = overfitted_predictions,
-                                   data = train,
-                                   phi_name = "phi",
-                                   y_name = "y_prime",
-                                   delta_name = "delta_prime",
-                                   max_time = max_time,
-                                   ev_methods = ev_methods,
-                                   phi = phi,
-                                   phi.args = phi.args,
-                                   mat_w = mat_w_train,
-                                   phi_non_censored_name = phi_non_censored_name,
-                                   bandwidths = bandwidths)
+                          data = train,
+                          phi_name = "phi",
+                          y_name = "y_prime",
+                          delta_name = "delta_prime",
+                          max_time = max_time,
+                          ev_methods = ev_methods,
+                          phi = phi,
+                          phi.args = phi.args,
+                          mat_w = mat_w_train,
+                          phi_non_censored_name = phi_non_censored_name,
+                          bandwidths = bandwidths)
 
   if ( (type_reg == "RF") & (mode_sw_RF == 2) ){
     perf_train_KMloc = eval_model(predictions = overfitted_predictions_KMloc,
-                                          data = train,
-                                          phi_name = "phi",
-                                          y_name = "y_prime",
-                                          delta_name = "delta_prime",
-                                          max_time = max_time,
-                                          ev_methods = ev_methods,
-                                          phi = phi,
-                                          phi.args = phi.args,
-                                          mat_w = mat_w_train,
-                                          phi_non_censored_name = phi_non_censored_name,
-                                          bandwidths = bandwidths)
+                                  data = train,
+                                  phi_name = "phi",
+                                  y_name = "y_prime",
+                                  delta_name = "delta_prime",
+                                  max_time = max_time,
+                                  ev_methods = ev_methods,
+                                  phi = phi,
+                                  phi.args = phi.args,
+                                  mat_w = mat_w_train,
+                                  phi_non_censored_name = phi_non_censored_name,
+                                  bandwidths = bandwidths)
   }
 
   if (!is.null(test)){
@@ -1027,8 +1027,8 @@ make_res_weighted_regression = function(y_var,
 
 
         res_test_predictions_KMloc = predict_rpartRF(obj = rpartRF_fit,
-                                                   newdata = test[,x_vars],
-                                                   type = "KMloc")
+                                                     newdata = test[,x_vars],
+                                                     type = "KMloc")
 
         test_predictions_KMloc = res_test_predictions_KMloc$pred_KMloc
 
@@ -1042,31 +1042,31 @@ make_res_weighted_regression = function(y_var,
 
     # Eval on test
     perf_test = eval_model(predictions = test_predictions,
-                                    data = test,
-                                    phi_name = "phi",
-                                    y_name = "y_prime",
-                                    delta_name = "delta_prime",
-                                    max_time = max_time,
-                                    ev_methods = ev_methods,
-                                    phi = phi,
-                                    phi.args = phi.args,
-                                    mat_w = mat_w_test,
-                                    phi_non_censored_name = phi_non_censored_name,
-                                    bandwidths = bandwidths)
+                           data = test,
+                           phi_name = "phi",
+                           y_name = "y_prime",
+                           delta_name = "delta_prime",
+                           max_time = max_time,
+                           ev_methods = ev_methods,
+                           phi = phi,
+                           phi.args = phi.args,
+                           mat_w = mat_w_test,
+                           phi_non_censored_name = phi_non_censored_name,
+                           bandwidths = bandwidths)
 
     if ((type_reg == "RF") & (mode_sw_RF == 2)){
       perf_test_KMloc = eval_model(predictions = test_predictions_KMloc,
-                                           data = test,
-                                           phi_name = "phi",
-                                           y_name = "y_prime",
-                                           delta_name = "delta_prime",
-                                           max_time = max_time,
-                                           ev_methods = ev_methods,
-                                           phi = phi,
-                                           phi.args = phi.args,
-                                           mat_w = mat_w_test,
-                                           phi_non_censored_name = phi_non_censored_name,
-                                           bandwidths = bandwidths)
+                                   data = test,
+                                   phi_name = "phi",
+                                   y_name = "y_prime",
+                                   delta_name = "delta_prime",
+                                   max_time = max_time,
+                                   ev_methods = ev_methods,
+                                   phi = phi,
+                                   phi.args = phi.args,
+                                   mat_w = mat_w_test,
+                                   phi_non_censored_name = phi_non_censored_name,
+                                   bandwidths = bandwidths)
     }
   }
 
@@ -1125,7 +1125,7 @@ predict_nodes = function (obj, newdata, na.action = stats::na.pass) {
     if (is.null(attr(newdata, "terms"))) {
       Terms <- stats::delete.response(obj$terms)
       newdata <- stats::model.frame(Terms, newdata, na.action = na.action,
-                             xlev = attr(obj, "xlevels"))
+                                    xlev = attr(obj, "xlevels"))
       if (!is.null(cl <- attr(Terms, "dataClasses")))
         stats::.checkMFClasses(cl, newdata, TRUE)
     }
@@ -1185,10 +1185,10 @@ rpartRF = function(data,
                                                      return(
                                                        c(node,
                                                          stats::approx(x = c(0,fit$time),
-                                                                y = c(0,nelson_allen),
-                                                                xout = seq(from = 0, to = max(data[,"y_prime"]) * 1.05, length.out = 100),
-                                                                method = "constant",
-                                                                rule = 2)$y)
+                                                                       y = c(0,nelson_allen),
+                                                                       xout = seq(from = 0, to = max(data[,"y_prime"]) * 1.05, length.out = 100),
+                                                                       method = "constant",
+                                                                       rule = 2)$y)
                                                      )
                                                    }
                                      ))
@@ -1200,7 +1200,7 @@ rpartRF = function(data,
               phi = phi,
               phi.args = phi.args,
               max_time = max_time
-              )
+  )
   )
 }
 
@@ -1218,14 +1218,14 @@ predict_rpartRF = function(obj, newdata, type){
     #not as fast as the next solution but no bug here
     #t1 = Sys.time()
     mean_nelson_allen_estimates = do.call(what = rbind,
-            args = lapply(X = 1:dim(preds_node)[1], FUN = function(j){ # t(preds_node)
-              mat_nelson_allen = do.call(what = rbind,
-                      args = lapply(X = 1:ntree, FUN = function(i){
-                        obj$list_models[[i]]$nelson_allen_estimates[obj$list_models[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
-                                                           2:ncol(obj$list_models[[i]]$nelson_allen_estimates)]
-                      }))
-              colMeans(mat_nelson_allen)
-    }))
+                                          args = lapply(X = 1:dim(preds_node)[1], FUN = function(j){ # t(preds_node)
+                                            mat_nelson_allen = do.call(what = rbind,
+                                                                       args = lapply(X = 1:ntree, FUN = function(i){
+                                                                         obj$list_models[[i]]$nelson_allen_estimates[obj$list_models[[i]]$nelson_allen_estimates[,1] == preds_node[j,i],
+                                                                                                                     2:ncol(obj$list_models[[i]]$nelson_allen_estimates)]
+                                                                       }))
+                                            colMeans(mat_nelson_allen)
+                                          }))
     # #Sys.time() - t1
 
     # t1 = Sys.time()
@@ -1259,7 +1259,5 @@ predict_rpartRF = function(obj, newdata, type){
                 pred_KMloc = as.vector(pred_KMloc)))
   }
 }
-
-
 
 

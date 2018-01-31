@@ -128,7 +128,7 @@ transplant_bis = transplant[complete.cases(transplant),]
 ```{r, fig.width=7, fig.height=4}
 # plot the survival curve of the waiting time until transplant
 KM = survfit(formula = Surv(time = futime, event = delta) ~ 1,
-                        data = transplant_bis)
+             data = transplant_bis)
 plot(KM, 
      main = "Survival Curve of the waiting time before liver transplant", 
      ylab = "survival prob.", xlab = "time (days)")
@@ -160,14 +160,14 @@ By default, the `type_reg` argument of `sw_reg` takes the values `"RF"`, which m
 
 ```{r}
 res1 = sw_reg(y_var = "futime", 
-                                    delta_var = "delta",
-                                    x_vars = c("age", "sex", "abo", "year"),
-                                    train = train,
-                                    test = test,
-                                    type_w = "KM",
-                                    phi = function(x){(x > 365) * 1},
-                                    max_time = 366,
-                                    types_w_ev = c("KM", "Cox", "RSF", "unif"))
+              delta_var = "delta",
+              x_vars = c("age", "sex", "abo", "year"),
+              train = train,
+              test = test,
+              type_w = "KM",
+              phi = function(x){(x > 365) * 1},
+              max_time = 366,
+              types_w_ev = c("KM", "Cox", "RSF", "unif"))
 ```
 
 The `type_w` argument specifies the type of weights to use in the model training, among `"KM"`, `"Cox"` and `"RSF"` (see part. ??, default = `"KM"`). The other possible value is `"unif"` which corresponds to every non censored observations getting the same weight (and censored obs. getting weights 0) : this value is not recommended since it generally leads to highly biased results, but it can be tested.
@@ -284,15 +284,15 @@ print(res1$sum_w_test) # sum fo the test weighs before reprocessing
 
 ```{r}
 res2 = sw_reg(y_var = "futime",
-                                    delta_var = "delta",
-                                    x_vars = c("age", "sex", "abo", "year"),
-                                    train = train,
-                                    test = test,
-                                    type_w = "KM",
-                                    phi = function(x){(x > 365) * 1},
-                                    max_time = 366,
-                                    types_w_ev = c("KM", "Cox", "RSF", "unif"),
-                                    mode_sw_RF = 2)
+              delta_var = "delta",
+              x_vars = c("age", "sex", "abo", "year"),
+              train = train,
+              test = test,
+              type_w = "KM",
+              phi = function(x){(x > 365) * 1},
+              max_time = 366,
+              types_w_ev = c("KM", "Cox", "RSF", "unif"),
+              mode_sw_RF = 2)
 ```
 
 ```{r}
@@ -306,16 +306,16 @@ The `sw_reg` may also be used to fit Generalized Additive Model (GAM) on surviva
 
 ```{r}
 res2 = sw_reg(y_var = "futime", 
-                                    delta_var = "delta",
-                                    x_vars = c("age", "sex", "abo", "year"),
-                                    train = train,
-                                    test = test,
-                                    type_reg = "gam",
-                                    type_w = "Cox",
-                                    phi = function(x){(x > 365) * 1},
-                                    max_time = 366,
-                                    types_w_ev = c("KM", "Cox", "RSF", "unif"),
-                                    family = binomial(link = "logit"))
+              delta_var = "delta",
+              x_vars = c("age", "sex", "abo", "year"),
+              train = train,
+              test = test,
+              type_reg = "gam",
+              type_w = "Cox",
+              phi = function(x){(x > 365) * 1},
+              max_time = 366,
+              types_w_ev = c("KM", "Cox", "RSF", "unif"),
+              family = binomial(link = "logit"))
 ```
 IPC weights are computed using the Cox model (`type_w = "Cox"`). The gam obj is returned by the function :
 
@@ -345,15 +345,15 @@ In fact, any parameter of the wrapped function can be specified through a call t
 
 ```{r}
 res11 = sw_reg(y_var = "futime", 
-                                    delta_var = "delta",
-                                    x_vars = c("age", "sex", "abo", "year"),
-                                    train = train,
-                                    test = test,
-                                    type_w = "KM",
-                                    phi = function(x){(x > 365) * 1},
-                                    max_time = 366,
-                                    types_w_ev = c("KM", "Cox", "RSF", "unif"),
-                                    proximity = T)
+               delta_var = "delta",
+               x_vars = c("age", "sex", "abo", "year"),
+               train = train,
+               test = test,
+               type_w = "KM",
+               phi = function(x){(x > 365) * 1},
+               max_time = 366,
+               types_w_ev = c("KM", "Cox", "RSF", "unif"),
+               proximity = T)
 ```
 
 
@@ -377,13 +377,13 @@ $$
 
 ```{r}
 res2 = rsf_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = c("age", "sex", "abo", "year"),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      phi = function(x){(x > 365) * 1},
-                      max_time = 366,
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = c("age", "sex", "abo", "year"),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               phi = function(x){(x > 365) * 1},
+               max_time = 366,
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 ```
 
 For the first 10 observations of the test set, we draw the predicted survival curves :
@@ -419,13 +419,14 @@ print(res2$perf_test)
 
 ```{r}
 res3 = cox_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = c("age", "sex", "abo", "year"),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      phi = function(x){(x > 365) * 1},
-                      max_time = 366,
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = c("age", "sex", "abo", "year"),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               phi = function(x){(x > 365) * 1},
+               max_time = 366,
+               types_w_ev = c("KM", "Cox", "RSF", "unif")
+               )
 ```
 
 ```{r,  fig.width=7}

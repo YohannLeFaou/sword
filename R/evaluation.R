@@ -165,8 +165,8 @@ eval_model = function(predictions,
       sum( (data[,phi_non_censored_name] - mean(data[,phi_non_censored_name]))^2 )
 
     Kendall = (1 + stats::cor.test(predictions,
-                            data[,phi_non_censored_name],
-                            method = "kendall")$estimate)/2
+                                   data[,phi_non_censored_name],
+                                   method = "kendall")$estimate)/2
 
     Gini = NormalizedGini(predictions,
                           data[,phi_non_censored_name])

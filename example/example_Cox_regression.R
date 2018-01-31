@@ -18,7 +18,7 @@ transplant_bis = transplant[stats::complete.cases(transplant),]
 
 # plot the survival curve of transplant data
 KM_transplant = survfit(formula = survival::Surv(time = futime, event = delta) ~ 1,
-                                  data = transplant_bis)
+                        data = transplant_bis)
 plot(KM_transplant)
 
 # ------------------------------------------------
@@ -26,11 +26,11 @@ plot(KM_transplant)
 # ------------------------------------------------
 
 res1 = cox_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),
-                                       c("futime", "delta", "event")),
-                      train = transplant_bis,
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),
+                                c("futime", "delta", "event")),
+               train = transplant_bis,
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 matplot(y = t(res1$surv_train[1:30,]), x = res1$time_points, type = "l")
 print(res1$perf_train)
@@ -43,11 +43,11 @@ print(res1$max_time) # by default \code{max_time} is set to 2055 which is too la
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res2 = cox_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 print(res2$max_time) # default \code{max_time} has changed since train set
 # is different
@@ -66,12 +66,12 @@ matplot(y = t(res2$surv_test[1:30,]), x = res2$time_points, type = "l")
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res3 = cox_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      max_time = 600,
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               max_time = 600,
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 print(res3$perf_train)
 print(res3$perf_test) # test error is much better
@@ -100,14 +100,14 @@ g = function(x,a) abs(x-a)
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res4 = cox_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      phi = g,
-                      phi.args = list(a = 200), # set value for "a"
-                      max_time = 600,
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               phi = g,
+               phi.args = list(a = 200), # set value for "a"
+               max_time = 600,
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 print(res4$perf_test)
 print(res4$pred_test[1:30])
@@ -135,17 +135,17 @@ transplant_bis = transplant[stats::complete.cases(transplant),]
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res1 = cox_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 # ------------------------------------------------
 #   Predict on new data
 # ------------------------------------------------
 
 pred1 = predict_cox_reg(obj = res1,
-                               newdata = transplant_bis[-train_lines,])
+                        newdata = transplant_bis[-train_lines,])
 print(pred1$pred[1:30])
 
 

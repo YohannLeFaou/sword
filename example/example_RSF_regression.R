@@ -26,11 +26,11 @@ plot(KM_transplant)
 # ------------------------------------------------
 
 res1 = rsf_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),
-                                       c("futime", "delta", "event")),
-                      train = transplant_bis,
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),
+                                c("futime", "delta", "event")),
+               train = transplant_bis,
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 # by default, (main) parameters used for the random survival forest are :
 print(res1$rsf_obj$mtry)
@@ -51,11 +51,11 @@ print(res1$max_time) # by default \code{max_time} is set to 2055 which is very l
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res2 = rsf_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 print(res2$max_time) # default \code{max_time} has changed since the train set
 # is different
@@ -70,12 +70,12 @@ print(res2$perf_test) # weighted criterias show there is a lot of overfitting
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res3 = rsf_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      max_time = 600,
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               max_time = 600,
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 print(res3$perf_train)
 print(res3$perf_test) # test error is much better
@@ -104,14 +104,14 @@ print(apply(X = res3$mat_w_test,
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res4 = rsf_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      max_time = 600,
-                      types_w_ev = c("KM", "Cox", "RSF"),
-                      minleaf = 5 # change \code{nodesize} for the inner call to \code{\link[randomForestSRC]{rfsrc}}
-                      )
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               max_time = 600,
+               types_w_ev = c("KM", "Cox", "RSF"),
+               minleaf = 5 # change \code{nodesize} for the inner call to \code{\link[randomForestSRC]{rfsrc}}
+)
 
 print(res4$perf_test) # slight amelioration compared
 
@@ -123,14 +123,14 @@ g = function(x,a) abs(x-a)
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res5 = rsf_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      test = transplant_bis[-train_lines,],
-                      phi = g,
-                      phi.args = list(a = 200), # set value for "a"
-                      max_time = 600,
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               test = transplant_bis[-train_lines,],
+               phi = g,
+               phi.args = list(a = 200), # set value for "a"
+               max_time = 600,
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 print(res5$perf_test)
 print(res5$pred_test[1:30])
@@ -158,17 +158,17 @@ transplant_bis = transplant[stats::complete.cases(transplant),]
 set.seed(17)
 train_lines = sample(1:nrow(transplant_bis), 600)
 res1 = rsf_reg(y_var = "futime",
-                      delta_var = "delta",
-                      x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
-                      train = transplant_bis[train_lines,],
-                      types_w_ev = c("KM", "Cox", "RSF", "unif"))
+               delta_var = "delta",
+               x_vars = setdiff(colnames(transplant_bis),c("futime", "delta", "event")),
+               train = transplant_bis[train_lines,],
+               types_w_ev = c("KM", "Cox", "RSF", "unif"))
 
 # ------------------------------------------------
 #   Predict on new data
 # ------------------------------------------------
 
 pred1 = predict_rsf_reg(obj = res1,
-                       newdata = transplant_bis[-train_lines,])
+                        newdata = transplant_bis[-train_lines,])
 print(pred1$pred[1:30])
 
 
