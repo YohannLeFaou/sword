@@ -27,5 +27,7 @@ Depends:
     R (>= 3.4), methods, survival (>= 2.41-3), graphics (>= 3.4)
 RoxygenNote: 6.0.1
 Suggests: knitr,
-    rmarkdown
+    rmarkdown,
+    ggplot2,
+    reshape2
 VignetteBuilder: knitr
