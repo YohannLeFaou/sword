@@ -1,6 +1,6 @@
 # sword : Survival Weighting fOr Regression of Duration
 
-`sword` is an **experimental** package which implements the methodology that we study in [??]. The main function of sword is `sw_reg` and allows to use the Inverse Probability of Censoring Weighting (IPCW) method to fit random forest and gam model to &Phi;(T) , where T is a right censored variable and &Phi; is a given function.
+`sword` is an **experimental** package which implements the methodology that we study in our [article](https://hal.archives-ouvertes.fr/hal-01807623/file/Article___The_impact_of_churn_on_prospect_value_in_health_insurance__evaluation_using_a_random_forest_under_random_censoring%20%281%29.pdf). The main function of sword is `sw_reg` and allows to use the Inverse Probability of Censoring Weighting (IPCW) method to fit random forest and gam model to &Phi;(T) , where T is a right censored variable and &Phi; is a given function.
 
 Different types of weights are available (Kaplan-Meier, Cox, Random Survival Forest (RSF)) and custom weights may be provided. `cox_reg` and `rsf_reg` are functions which implement the 2 benchmarks based on Cox model and RSF model studied in our article. The package also provides different measures of performance regarding the quality of fit of the model.
 
