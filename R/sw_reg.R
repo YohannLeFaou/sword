@@ -962,6 +962,7 @@ make_res_weighted_regression = function(y_var,
                             ntree = ntree,
                             minleaf = minleaf,
                             maxdepth = maxdepth,
+                            mat_w_train = mat_w_train,
                             ...)
 
 
@@ -1154,6 +1155,7 @@ rpartRF = function(data,
                    ntree, # peut-etre a enlever plus tard
                    minleaf,
                    maxdepth,
+                   mat_w_train,
                    ...){
   list_models = list()
   for (i in 1:ntree){
@@ -1165,15 +1167,21 @@ rpartRF = function(data,
     sample_train = sample(x = 1:nrow(data), size = nrow(data), replace = T)
     d_train = data[sample_train, ]
 
-    weights_in_bag = make_weights(y_name = "y_prime",
-                                  delta_name = "delta_prime",
-                                  y_name2 = y_var,
-                                  delta_name2 = delta_var,
-                                  x_vars = x_vars,
-                                  cens_mod_obj = F,
-                                  max_ratio_weights = max_w_mod,
-                                  type = type_w,
-                                  data = d_train)$weights
+    if (type_w == "theo"){
+      weights_in_bag = mat_w_train[sample_train, "theo"]
+      weights_in_bag = pmin(weights_in_bag, min(weights_in_bag[weights_in_bag > 0]) * max_w_mod)
+      weights_in_bag = weights_in_bag / sum(weights_in_bag)
+    } else{
+      weights_in_bag = make_weights(y_name = "y_prime",
+                                    delta_name = "delta_prime",
+                                    y_name2 = y_var,
+                                    delta_name2 = delta_var,
+                                    x_vars = x_vars,
+                                    cens_mod_obj = F,
+                                    max_ratio_weights = max_w_mod,
+                                    type = type_w,
+                                    data = d_train)$weights
+    }
 
     model = rpart::rpart(formula = phi ~ .,
                          data = d_train[which(weights_in_bag > 0), c("phi", x_vars)],
