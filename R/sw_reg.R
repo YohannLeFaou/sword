@@ -572,8 +572,10 @@ sw_reg = function(y_var,
   # Preprocessing of the arguments & data
 
   ## specific preprocessing compared to Cox/RSF regression
-  type_w = match.arg(as.character(type_w), c("KM", "Cox", "RSF", "unif"))
   weights_manual = !is.null(mat_w)
+  if (!weights_manual){
+    type_w = match.arg(as.character(type_w), c("KM", "Cox", "RSF", "unif"))
+  }
   type_reg = match.arg(as.character(type_reg), c("RF", "gam"))
   # --------------------------------------------------------------------------------
 
@@ -581,7 +583,9 @@ sw_reg = function(y_var,
   if (is.null(bandwidths) & ("group" %in% ev_methods)) bandwidths = 50
   if (is.null(max_w_mod)) max_w_mod = floor(sqrt(nrow(train))/2)
 
-  types_w_ev = match.arg(as.character(types_w_ev), c("KM", "Cox", "RSF", "unif"), several.ok = T)
+  if (!weights_manual){
+    types_w_ev = match.arg(as.character(types_w_ev), c("KM", "Cox", "RSF", "unif"), several.ok = T)
+  }
   types_w_ev = unique(c(type_w, types_w_ev)) # weights for trainig are used for evaluation
 
   if(is.null(mtry)){mtry = floor(sqrt(length(x_vars)))}
@@ -627,11 +631,14 @@ sw_reg = function(y_var,
     if (is.null(type_w)){
       type_w = colnames(mat_w)[1]
     }
+    if (is.null(types_w_ev)){
+      types_w_ev = colnames(mat_w)
+    }
     w_mod_train = mat_w[1:nrow(train), type_w]
-    mat_w_train = mat_w[1:nrow(train),]
+    mat_w_train = mat_w[1:nrow(train), types_w_ev]
     sum_w_train = apply(X = mat_w_train, MARGIN = 2, FUN = sum)
     if (!is.null(test)){
-      mat_w_test = mat_w[(nrow(train) +1):nrow(data),]
+      mat_w_test = mat_w[(nrow(train) +1):nrow(data), types_w_ev]
       sum_w_test = apply(X = mat_w_test, MARGIN = 2, FUN = sum)
     }
   }

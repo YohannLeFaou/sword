@@ -372,7 +372,10 @@ rsf_reg = function(y_var,
 
   ev_methods <- match.arg(as.character(ev_methods), c("concordance", "group", "weighted"), several.ok = T)
   if (is.null(bandwidths) & ("group" %in% ev_methods)) bandwidths = 50
-  types_w_ev = match.arg(as.character(types_w_ev), c("KM", "Cox", "RSF", "unif"), several.ok = T)
+
+  if (is.null(mat_w)){
+    types_w_ev = match.arg(as.character(types_w_ev), c("KM", "Cox", "RSF", "unif"), several.ok = T)
+  }
 
   if(is.null(mtry)){mtry = floor(sqrt(length(x_vars)))}
 
@@ -442,9 +445,12 @@ rsf_reg = function(y_var,
 
   # Build mat_w_train & mat_w_test if mat_w provided
   if (!is.null(mat_w)){
-    mat_w_train = mat_w[1:nrow(train),]
+    if (is.null(types_w_ev)){
+      types_w_ev = colnames(mat_w)
+    }
+    mat_w_train = mat_w[1:nrow(train), types_w_ev]
     if (!is.null(test)){
-      mat_w_test = mat_w[(nrow(train)+1):(nrow(data)),]
+      mat_w_test = mat_w[(nrow(train)+1):(nrow(data)), types_w_ev]
     }
   }
 

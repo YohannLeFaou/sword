@@ -312,14 +312,15 @@ cox_reg = function(y_var,
 
   # Preprocessing of the arguments & data
 
-  # preprocessing() # this doesn't work for the moment
-
-  # column names of mat_w should be explicit
+  ## column names of mat_w should be explicit
   if(!is.null(mat_w) & is.null(colnames(mat_w))) colnames(mat_w) = paste0("w",1:ncol(mat_w))
 
   ev_methods <- match.arg(as.character(ev_methods), c("concordance", "group", "weighted"), several.ok = T)
   if (is.null(bandwidths) & ("group" %in% ev_methods)) bandwidths = 50
-  types_w_ev = match.arg(as.character(types_w_ev), c("KM", "Cox", "RSF", "unif"), several.ok = T)
+
+  if (is.null(mat_w)){
+    types_w_ev = match.arg(as.character(types_w_ev), c("KM", "Cox", "RSF", "unif"), several.ok = T)
+  }
 
   if (is.null(y_no_cens_var)) {
     phi_non_censored_name = NULL
@@ -387,9 +388,12 @@ cox_reg = function(y_var,
   }
 
   if (!is.null(mat_w)){
-    mat_w_train = mat_w[1:nrow(train),]
+    if (is.null(types_w_ev)){
+      types_w_ev = colnames(mat_w)
+    }
+    mat_w_train = mat_w[1:nrow(train), types_w_ev]
     if (!is.null(test)){
-      mat_w_test = mat_w[(nrow(train)+1):(nrow(data)),]
+      mat_w_test = mat_w[(nrow(train)+1):(nrow(data)), types_w_ev]
     }
   }
 
