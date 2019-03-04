@@ -2,7 +2,7 @@
 #' @title Fit classical regression model (GAM, RF) on right censored data using IPCW
 #'
 #' @description \code{sw_reg} is the core function of the package.
-#' It implements the method we study in [Gerb. et al.] to adapt regression
+#' It implements the method we study in [Gerber et al. (2018)] to adapt regression
 #' algorithms to right censored target variable. Given a right
 #' censored variable \eqn{T}, a
 #' function \code{phi} and covariates \eqn{X}, \code{sw_reg}
@@ -41,7 +41,8 @@
 #'
 #' @param type_w A character string giving the type of IPC weights used to
 #' train the regression model (default = \code{"KM"}). Other possible values are "Cox", "RSF"
-#' and "unif".
+#' and "unif". Set to \code{colnames(mat_w)[1]}
+#' if \code{mat_w} is provided.
 #'
 #' @param phi A function to be applied to \code{y_var}
 #'
@@ -77,7 +78,9 @@
 #' types of weights to be used for IPCW
 #' (Inverse Probability of Censoring Weighting) in the model evaluation
 #' (default = \code{c("KM")} (Kaplan Meier)).
-#' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. See
+#' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. Set to
+#' \code{colnames(mat_w)}
+#' if \code{mat_w} is provided. See
 #' \emph{Details - Evaluation criteria} for more information
 #'
 #' @param max_w_mod A real number which gives the maximum admissible ratio
@@ -333,7 +336,9 @@
 #' \item{mode_sw_RF}{See \emph{Argument}}
 #'
 #'
-#' @references [Gerb. et al.] to be published
+#' @references Gerber, G., Le Faou, Y., Lopez, O., & Trupin, M. (2018). \emph{The impact of churn on
+#' prospect value in health insurance, evaluation using a random forest under random censoring.}
+#' \url{https://hal.archives-ouvertes.fr/hal-01807623/}
 #'
 #' @seealso \code{\link[randomForestSRC]{rfsrc}}, \code{\link[rpart]{rpart}},
 #' \code{\link[mgcv]{gam}},
@@ -586,7 +591,7 @@ sw_reg = function(y_var,
   if (!weights_manual){
     types_w_ev = match.arg(as.character(types_w_ev), c("KM", "Cox", "RSF", "unif"), several.ok = T)
   }
-  types_w_ev = unique(c(type_w, types_w_ev)) # weights for trainig are used for evaluation
+  types_w_ev = unique(c(type_w, types_w_ev)) # weights for training are used for evaluation
 
   if(is.null(mtry)){mtry = floor(sqrt(length(x_vars)))}
 
@@ -628,17 +633,13 @@ sw_reg = function(y_var,
 
   if (weights_manual){
     if (nrow(mat_w) != nrow(data)){stop("mat_w should satisfy nrow(mat_w) = nrow(train) + nrow(test)")}
-    if (is.null(type_w)){
-      type_w = colnames(mat_w)[1]
-    }
-    if (is.null(types_w_ev)){
-      types_w_ev = colnames(mat_w)
-    }
+    type_w = colnames(mat_w)[1]
+    types_w_ev = colnames(mat_w)
     w_mod_train = mat_w[1:nrow(train), type_w]
-    mat_w_train = mat_w[1:nrow(train), types_w_ev]
+    mat_w_train = as.matrix(mat_w[1:nrow(train), types_w_ev])
     sum_w_train = apply(X = mat_w_train, MARGIN = 2, FUN = sum)
     if (!is.null(test)){
-      mat_w_test = mat_w[(nrow(train) +1):nrow(data), types_w_ev]
+      mat_w_test = as.matrix(mat_w[(nrow(train) +1):nrow(data), types_w_ev])
       sum_w_test = apply(X = mat_w_test, MARGIN = 2, FUN = sum)
     }
   }
@@ -902,7 +903,7 @@ predict_sw_reg = function(obj, newdata){
                 surv_KMloc = res_predictions_KMloc$pred_surv_KMloc,
                 time_points = res_predictions_KMloc$time))
   }
-  }
+}
 
 
 make_res_weighted_regression = function(y_var,

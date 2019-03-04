@@ -2,8 +2,12 @@
 
 export(cox_reg)
 export(predict_cox_reg)
+export(predict_rlt_reg)
+export(predict_rrt_reg)
 export(predict_rsf_reg)
 export(predict_sw_reg)
+export(rlt_reg)
+export(rrt_reg)
 export(rsf_reg)
 export(sw_reg)
 import(methods)

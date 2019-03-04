@@ -1,7 +1,7 @@
 
 #' @title Fit a RSF model and compute predictions of expectations for \code{phi}\eqn{(T)}
 #'
-#' @description \code{rsf_reg} is a benchmark model we use in [Gerb. et al.] (see §?).
+#' @description \code{rsf_reg} is a benchmark model we use in [Gerber et al. (2018)].
 #' To model the variable \code{phi}\eqn{(T)}, where \eqn{T} is a right censored time and
 #' \code{phi} is a given function, we first
 #' fit a RSF model to the data to estimate the survival function of \eqn{T} given the covariates. Then,
@@ -54,7 +54,8 @@
 #'
 #' @param types_w_ev A vector of character strings which gives the types of weights to be used for IPCW
 #' (Inverse Probability of Censoring Weighting) in the model evaluation (default = \code{c("KM")} (Kaplan Meier)).
-#' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. See
+#' Possible choices are \code{"KM"}, \code{"Cox"}, \code{"RSF"} and \code{"unif"}. Set to \code{colnames(mat_w)}
+#' if \code{mat_w} is provided. See
 #' \emph{Details - Evaluation criteria} for more information
 #'
 #' @param max_w_ev A real number which gives the maximum admissible ratio
@@ -176,7 +177,7 @@
 #' \item{n_w_ev_modif_test}{The vector giving the number of test weights modified due to
 #' \code{max_w_ev}}
 #'
-#' \item{rsf_obj}{The obj returned by the \code{coxph} function}
+#' \item{rsf_obj}{The obj returned by the \code{rfsrc} function}
 #'
 #' \item{max_time}{The real number giving the threshold used by the model}
 #'
@@ -199,10 +200,11 @@
 #' \item{max_w_ev}{See \emph{Argument}}
 #'
 #'
-#' @references [Gerb. et al.] to be published
+#' @references Gerber, G., Le Faou, Y., Lopez, O., & Trupin, M. (2018). \emph{The impact of churn on
+#' prospect value in health insurance, evaluation using a random forest under random censoring.}
+#' \url{https://hal.archives-ouvertes.fr/hal-01807623/}
 #'
-#' @seealso \code{\link[randomForestSRC]{rfsrc}}, \code{\link{predict_rsf_reg}}, \url{http://rstudio.com}
-#' (only here for the example)
+#' @seealso \code{\link[randomForestSRC]{rfsrc}}, \code{\link{predict_rsf_reg}}
 #'
 #' @export
 #'
@@ -445,12 +447,12 @@ rsf_reg = function(y_var,
 
   # Build mat_w_train & mat_w_test if mat_w provided
   if (!is.null(mat_w)){
-    if (is.null(types_w_ev)){
+    if (types_w_ev == "KM"){
       types_w_ev = colnames(mat_w)
     }
-    mat_w_train = mat_w[1:nrow(train), types_w_ev]
+    mat_w_train = as.matrix(mat_w[1:nrow(train), types_w_ev])
     if (!is.null(test)){
-      mat_w_test = mat_w[(nrow(train)+1):(nrow(data)), types_w_ev]
+      mat_w_test = as.matrix(mat_w[(nrow(train)+1):(nrow(data)), types_w_ev])
     }
   }
 
@@ -493,7 +495,7 @@ rsf_reg = function(y_var,
   formula = stats::as.formula(paste0("Surv(", y_var, ",", delta_var," ) ~ ."))
   ntime = seq(from = 0, to = max_time * 1.05, length.out = 100)
 
-  rfSRC = randomForestSRC::rfsrc(formula = formula ,
+  rfSRC = randomForestSRC::rfsrc(formula = formula,
                                  data = train[,c(y_var, delta_var, x_vars)],
                                  forest = T,
                                  ntime = ntime,
@@ -584,7 +586,7 @@ rsf_reg = function(y_var,
     }
   }
   return(result)
-  }
+}
 
 
 #' @title Compute the prediction of a model built with \code{\link{rsf_reg}}

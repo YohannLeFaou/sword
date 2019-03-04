@@ -3,7 +3,7 @@ Type: Package
 Title: Random forest with IPC weights for survival analysis
 Version: 0.1.0
 Authors@R: person("Yohann", "Le Faou", 
-    email = "yohannlefa@gmail.com", 
+    email = "lefaou.yohann@gmail.com", 
     role = c("aut", "cre"))
 Description:
     sword is a package which implements the methology developed in (citer article).
@@ -21,6 +21,7 @@ LazyData: true
 Imports:
     randomForestSRC (>= 2.4.2),
     mgcv (>= 1.8-17),
+    RLT,
     rpart (>= 4.1-11),
     stats (>= 3.4)
 Depends:
