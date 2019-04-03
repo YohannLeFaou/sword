@@ -447,7 +447,7 @@ rsf_reg = function(y_var,
 
   # Build mat_w_train & mat_w_test if mat_w provided
   if (!is.null(mat_w)){
-    if (types_w_ev == "KM"){
+    if (identical(types_w_ev, "KM")){
       types_w_ev = colnames(mat_w)
     }
     mat_w_train = as.matrix(mat_w[1:nrow(train), types_w_ev])

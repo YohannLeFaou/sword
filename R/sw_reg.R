@@ -563,7 +563,7 @@ sw_reg = function(y_var,
                   types_w_ev = "KM",
                   max_w_mod = NULL,
                   max_w_ev = 1000,
-                  mat_w = NULL, # when mat_w is not NULL, and type_w is NULL, the column 1 of mat_w is employed for fitting
+                  mat_w = NULL,
                   y_no_cens_var = NULL,
 
                   # param for RF
@@ -633,7 +633,9 @@ sw_reg = function(y_var,
 
   if (weights_manual){
     if (nrow(mat_w) != nrow(data)){stop("mat_w should satisfy nrow(mat_w) = nrow(train) + nrow(test)")}
-    type_w = colnames(mat_w)[1]
+    if (!(type_w %in% colnames(mat_w))){
+      type_w = colnames(mat_w)[1]
+    }
     types_w_ev = colnames(mat_w)
     w_mod_train = mat_w[1:nrow(train), type_w]
     mat_w_train = as.matrix(mat_w[1:nrow(train), types_w_ev])
@@ -805,7 +807,7 @@ sw_reg = function(y_var,
     weighted_regression_result$cens_mod_obj = cens_mod_object
   }
   return(weighted_regression_result)
-  }
+}
 
 
 
